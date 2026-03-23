@@ -1,8 +1,9 @@
 import { CONTRACTS, POOL_ABI, ORACLE_ABI, TOKEN_SYMBOLS, TOKENS } from "../contracts.js";
 import { callFunction, getBlockNumber, safeCall } from "../rpc.js";
 
-const SECONDS_PER_YEAR = 31_536_000n;
-const RAY = 10n ** 27n;
+// currentLiquidityRate / variableBorrowRate from getReserveData are already annual rates in RAY (1e27)
+// APY% = rate / 1e25  (i.e. rate / 1e27 * 100)
+const RAY_PERCENT = 10n ** 25n;
 const WAD = 10n ** 18n;
 
 interface MarketData {
@@ -24,12 +25,11 @@ interface MarketsResult {
   markets: MarketData[];
 }
 
-/** Convert ray rate → APY as decimal (e.g. 0.042) */
+/** Convert annual ray rate → APY percentage (e.g. 47.66)
+ *  currentLiquidityRate is already annual in RAY units → divide by 1e25 to get %
+ */
 function rayToAPY(rateBig: bigint): number {
-  // linearised APY: rate_per_second * seconds_per_year
-  // rate is in ray (1e27), per-second
-  const apy = (rateBig * SECONDS_PER_YEAR * 10_000n) / RAY;
-  return Number(apy) / 10_000;
+  return Number((rateBig * 10_000n) / RAY_PERCENT) / 10_000;
 }
 
 /** Convert base units price (8 decimals from Aave oracle) + token amount → USD */

@@ -3,15 +3,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getMarkets = getMarkets;
 const contracts_js_1 = require("../contracts.js");
 const rpc_js_1 = require("../rpc.js");
-const SECONDS_PER_YEAR = 31536000n;
-const RAY = 10n ** 27n;
+// currentLiquidityRate / variableBorrowRate from getReserveData are already annual rates in RAY (1e27)
+// APY% = rate / 1e25  (i.e. rate / 1e27 * 100)
+const RAY_PERCENT = 10n ** 25n;
 const WAD = 10n ** 18n;
-/** Convert ray rate → APY as decimal (e.g. 0.042) */
+/** Convert annual ray rate → APY percentage (e.g. 47.66)
+ *  currentLiquidityRate is already annual in RAY units → divide by 1e25 to get %
+ */
 function rayToAPY(rateBig) {
-    // linearised APY: rate_per_second * seconds_per_year
-    // rate is in ray (1e27), per-second
-    const apy = (rateBig * SECONDS_PER_YEAR * 10000n) / RAY;
-    return Number(apy) / 10_000;
+    return Number((rateBig * 10000n) / RAY_PERCENT) / 10_000;
 }
 /** Convert base units price (8 decimals from Aave oracle) + token amount → USD */
 function toUSD(amount, price, decimals) {
