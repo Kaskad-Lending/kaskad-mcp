@@ -216,26 +216,31 @@ Milestones use TWAL/TWAP validation (time-weighted — no flash TVL manipulation
 
 ---
 
-### 5.9 Bounded Governance Parameters (Summary)
+### 5.9 Bounded Governance Parameters (Complete — sourced from DecisionParams.sol + Whitepaper V1)
 All parameters below are adjustable by DAO vote within the stated bounds only:
 
-| Parameter | Floor | Ceiling | Default |
-|-----------|-------|---------|---------|
-| Supplier min deposit | $100 | +15% = $115 | $100 |
-| Supplier uptime | 80% | 92.5% | 90% |
-| Borrower min LTV | 15% | 20% | 15% |
-| Borrower uptime | 50% | ~60% | 50% |
-| Emission split (supplier%) | 40% | 60% | ~60% |
-| Undistributed emission → IncentiveDist | 35% | 65% | governance |
-| Kaspa Core Funding % | 5% | 7.5% | 5% |
-| DAO epoch outflow cap | — | 85% of balance | 85% |
-| Supply Adjustment size cap | — | 5% of 30d avg vol | 5% |
+| Parameter | Source (DecisionParams.sol) | Floor | Ceiling | Current default |
+|-----------|----------------------------|-------|---------|----------------|
+| Emission split (supplier %) | `EMISSION_SUPPLIERS_SHARE_BPS` | 40% | 60% | ~60% |
+| Supplier min uptime | `TVL_MIN_SUPPLY_UPTIME_BPS` | 87.5% | 92.5% | 90% |
+| Borrower min uptime | `BORROWER_MIN_UPTIME_BPS` | 50% | 55% | 50% |
+| Borrower min LTV | `BORROWER_MIN_LTV_BPS` | 15% | 20% | 15% |
+| Supplier min deposit (USD) | `TVL_MIN_SUPPLY_USD` | $85 | $115 | $100 |
+| Undistributed emissions → next epoch | `UNDISTRIBUTED_TO_NEXT_EPOCH_BPS` | 35% | 65% | governance |
+| DAO revenue → TVL incentives | `DAO_TVL_INCENTIVES_SHARE_BPS` | 50% | 80% | 50% |
+| DAO revenue → Supply Adjustment | `DAO_BURN_SHARE_BPS` | 15% | 20% | 15% |
+| DAO revenue → Kaspa Core Funding | `DAO_KASPA_CORE_SHARE_BPS` | 5% | 7.5% | 5% |
+| Milestone bonus split (TVL vs vested) | `MILESTONE_TVL_VS_VESTED_SHARE_BPS` | 35% | 65% | governance |
+| DAO epoch outflow cap | — | — | 85% of DAO balance | 85% |
+| Supply Adjustment size cap | — | 5% | 5% of 30d avg vol | 5% |
 
 **What governance CANNOT do:**
-- Modify the 65/35 treasury split
-- Change the 39% emission vault allocation
-- Reduce parameters below their hard floors
-- Distribute treasury assets without a governance proposal + 48h timelock + 24h challenge window
+- Modify the 65/35 treasury split (hardcoded in routing contracts)
+- Change the 39% emission vault allocation (immutable at deployment)
+- Reduce any parameter below its contract-enforced floor
+- Distribute treasury assets without: governance proposal → 48h timelock → 24h challenge window → execution
+
+**stKSKD note (planned, not live):** Future roadmap includes option to borrow against staked KSKD (stKSKD) as collateral. Not in current contract deployment — do not model this as available functionality.
 
 ---
 
