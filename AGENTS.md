@@ -115,37 +115,142 @@ cast send 0xA1D84fc43f7F2D803a2d64dbBa4A90A9A79E3F24 \
 
 ## 5. Tokenomics Context for Agents
 
-Understanding KSKD tokenomics is critical for yield interpretation. APYs on Kaskad are a combination of real yield (interest from borrowers) and KSKD emission incentives. Without this context, agents will misread APY signals.
+APY on Kaskad = **real yield** (borrower interest) + **KSKD emission incentives**. Without understanding the emission schedule and eligibility rules, agents will systematically misread yield signals.
 
-### KSKD Token
-- **Token:** KSKD
-- **FDV at launch:** $12.5M | **Price day 1:** $0.0125
+---
+
+### 5.1 KSKD Token Basics
+- **Total supply:** 1,000,000,000 KSKD (fixed at deployment — no future minting)
+- **FDV at launch:** $12.5M | **Day 1 price:** $0.0125
 - **Testnet address:** `0x2d17780a59044D49FeEf0AA9cEaB1B6e3161aFf7`
-- **Oracle status (pre-TGE):** Static price — no live market data. APY calculations using KSKD price are indicative only.
-- **Oracle status (post-TGE):** Live price feed via Kaskad oracle (median of 6 sources).
+- **Oracle (pre-TGE):** Static price — do not use for yield calculations. APYs involving KSKD are indicative only.
+- **Oracle (post-TGE):** Live price feed (Kaskad Oracle V1 — median of 6 sources).
+- **Supported launch assets:** USDC, WETH, USDT, WBTC, stETH. **KSKD is NOT listed at TGE** (thin liquidity risk). Do not recommend KSKD as supply collateral at launch.
 
-### Emission Schedule
-- **Emission vault:** 39% of total KSKD supply, hardcoded — not governance-adjustable.
-- **Duration:** 36 months from mainnet launch.
-- **Epoch length:** 30 days (mainnet) / 4 days (testnet).
-- **Implication:** Supply APY is partially emission-driven. As the vault depletes over 36 months, emission APY declines. Real yield (from borrower interest) must grow to compensate. An agent recommending "max supply KSKD" based on current APY must account for this decay curve.
+---
 
-### Emission Split (Governance-Adjustable)
-- **Default split:** ~60% to suppliers / ~40% to borrowers (adjustable via DAO vote within bounded ranges).
-- **Effect:** Higher supply split → higher supply APY → more TVL attraction. Higher borrow split → cheaper borrowing → more utilization. Both affect sustainable yield.
+### 5.2 Emission Schedule (Immutable)
+- **Emission vault:** 39% of total supply = 390,000,000 KSKD — hardcoded at deployment, **not governance-adjustable**
+- **Epoch length:** 30 days (mainnet) / 4 days (testnet)
 
-### Uptime Eligibility
-- **Suppliers** must maintain position above a minimum TVL threshold for the full epoch to receive emissions (partial epochs yield proportionally less).
-- **Borrowers** must maintain borrow position above minimum LTV threshold.
-- **Implication:** Agents should not recommend opening/closing positions mid-epoch if the goal is emission capture — timing matters.
+| Phase | Duration | Allocation (% of total supply) | Monthly rate |
+|-------|----------|-------------------------------|--------------|
+| Phase 1 | 0–6 months | 2% | ~0.33%/month |
+| Phase 2 | 6–12 months | 4% | ~0.66%/month |
+| Phase 3 | 12–18 months | 6% | ~1%/month |
+| Phase 4 | 18–35 months | 27% | ~1.59%/month |
 
-### DAO Revenue Routing
-- **65% of protocol revenue** → DAO vault (hardcoded). DAO vote required for allocation (TVL incentives, burn, Kaspa core fund, etc.).
-- **35%** → operational treasury.
-- **Implication:** Protocol revenue is not automatically recycled to LPs — DAO governance determines how it flows back.
+**Critical for agents:** Emission APY is highest in Phase 3–4 but the vault depletes. By month 36, emissions stop entirely. Yield recommendations must account for this decay — "high APY now" ≠ "high APY in 18 months."
 
-### Supported Assets at Launch
-USDC, WETH, USDT, WBTC, stETH — KSKD is **not** listed at TGE due to thin liquidity risk. Agents should not attempt to supply/borrow KSKD as collateral in mainnet launch configuration.
+---
+
+### 5.3 Emission Split (Governance-Adjustable)
+- **Bounded range:** 40–60% to suppliers / 40–60% to borrowers (cannot go outside this range)
+- **Formula:** `E_t = E_sup(r_t) + E_bor(1 - r_t)` where `r_t ∈ [0.4, 0.6]`
+- **Borrower emissions** are weighted by per-asset utilization: `E_bor,i ∝ TWAL_i / Cap_i`
+- **Effect:** Underutilized assets receive reduced emissions. Unallocated borrower emissions are redirected to the DAO Treasury.
+
+---
+
+### 5.4 Eligibility Rules (What qualifies for emissions)
+
+**Suppliers must:**
+- Maintain minimum position ≥ $100 (adjustable ±15%, floor is $100 — never lower)
+- Maintain ≥ 90% uptime per epoch (adjustable ±2.5%, floor is 80%)
+- Sustain position for full epoch — mid-epoch entry/exit reduces proportional allocation
+
+**Borrowers must:**
+- Maintain LTV ≥ 15% (floor, not adjustable below this)
+- Maintain ≥ 50% uptime per epoch (floor, not adjustable below this)
+
+**Agent implication:** Recommend opening positions at epoch start, not end. Partial-epoch participation yields proportionally less. Closing a supply position mid-epoch forfeits remaining emission allocation for that epoch.
+
+---
+
+### 5.5 Voter Eligibility (Governance Access)
+To participate in governance, a user must **simultaneously**:
+1. Hold an active supply or borrow position qualifying as a TVL Participant
+2. Hold liquid-staked KSKD (staking is non-withdrawable during active voting epochs)
+3. Have a history of validated votes (increases Loyalty Score over time)
+
+**Voting power formula:** `Vp = λ1 · TVL_p,t + λ2 · (Stake_p,t + φ · ΣVotes_p)`
+
+**Agent implication:** Staking KSKD for governance does NOT yield financial returns — it only confers governance influence. Do not model staking as yield.
+
+---
+
+### 5.6 Treasury Routing (Immutable)
+- **65% of all protocol fees** → DAO Treasury Pool (governed by voters)
+- **35%** → Operational Treasury (infrastructure, audits — no user distributions)
+- Protocol revenue is **not** automatically recycled to LPs. DAO vote required for any allocation.
+
+**DAO Treasury sub-allocations (governance-adjustable within bounds):**
+- Incentives Distributor: min 50%, adjustable up to 80%
+- Supply Adjustment Mechanism: min 15%, adjustable up to 20%
+- Kaspa Core Funding Wallet: min 5%, adjustable up to 7.5%
+- Epoch outflow cap: max 85% of DAO balance per epoch
+
+---
+
+### 5.7 Undistributed Emissions Recycling
+When borrower utilization is below the active cap, unused emissions go to the DAO Treasury. Voters decide (within 35–65% bounds) to either:
+- Recycle to next epoch's incentive distributor (boosts future APY)
+- Send to Supply Adjustment Mechanism (removes from circulation)
+
+---
+
+### 5.8 Milestone Incentives (User Onboarding Phase — 18 months)
+TVL milestone unlocks release additional non-KSKD incentives from a Growth Pool:
+
+| Level | TVL Threshold | Allocation (% of Reserved Budget) |
+|-------|--------------|-----------------------------------|
+| 1 | $1M | 1.4% (one time) |
+| 2 | $3M | 1.4% (one time) |
+| 3 | $5M | 1.4% (one time) |
+| 4 | $10M | 2.8% (one time) |
+| 5 | $20M | 2.8% (one time) |
+| 6 | $50M | 2.8% (one time) |
+| 7 | $100M | 2.8% (one time) |
+
+Milestones use TWAL/TWAP validation (time-weighted — no flash TVL manipulation), with cooldown periods and challenge windows. Distribution requires DAO vote after milestone verification.
+
+---
+
+### 5.9 Bounded Governance Parameters (Summary)
+All parameters below are adjustable by DAO vote within the stated bounds only:
+
+| Parameter | Floor | Ceiling | Default |
+|-----------|-------|---------|---------|
+| Supplier min deposit | $100 | +15% = $115 | $100 |
+| Supplier uptime | 80% | 92.5% | 90% |
+| Borrower min LTV | 15% | 20% | 15% |
+| Borrower uptime | 50% | ~60% | 50% |
+| Emission split (supplier%) | 40% | 60% | ~60% |
+| Undistributed emission → IncentiveDist | 35% | 65% | governance |
+| Kaspa Core Funding % | 5% | 7.5% | 5% |
+| DAO epoch outflow cap | — | 85% of balance | 85% |
+| Supply Adjustment size cap | — | 5% of 30d avg vol | 5% |
+
+**What governance CANNOT do:**
+- Modify the 65/35 treasury split
+- Change the 39% emission vault allocation
+- Reduce parameters below their hard floors
+- Distribute treasury assets without a governance proposal + 48h timelock + 24h challenge window
+
+---
+
+### 5.10 Token Distribution (for context)
+
+| Category | Allocation |
+|----------|-----------|
+| Activity Incentives (emission vault) | min 39% |
+| Ecosystem Liquidity (10% DEX + 8% listings) | 18% |
+| Community & Ecosystem Dev Phase 1 | up to 20% |
+| Team | 12.5% (0% at TGE, 9-month cliff, 36-month vesting) |
+| Advisors | up to 3% |
+| Community Phase 2 | up to 3.26% |
+| Institutional Participation | 3% |
+| Commitment Incentives | 1.24% |
 
 ---
 
