@@ -1,6 +1,7 @@
 // Contract addresses — Igra Galleon Testnet (chain ID 38836)
 export const CHAIN_ID = 38836;
 export const RPC_URL = "https://galleon-testnet.igralabs.com:8545";
+export const SUBGRAPH_URL = "https://testnet.kaskad.live/subgraphs/name/galleon-testnet-aave-v3";
 
 export const CONTRACTS = {
   priceOracle:           "0xc1198A9d400306a0406fD3E3Ad67140b3D059f48",
@@ -25,6 +26,9 @@ export const TOKENS: Record<string, string> = {
 export const TOKEN_SYMBOLS: Record<string, string> = Object.fromEntries(
   Object.entries(TOKENS).map(([sym, addr]) => [addr.toLowerCase(), sym])
 );
+
+// Active assets map — used for subgraph filtering
+export const ACTIVE_ASSETS: Record<string, string> = TOKENS;
 
 // Aave v3 Pool — minimal ABI fragments used for encoding/decoding
 export const POOL_ABI = [

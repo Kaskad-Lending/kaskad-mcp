@@ -9,6 +9,7 @@ import {
 import { getMarkets } from "./tools/getMarkets.js";
 import { getPosition } from "./tools/getPosition.js";
 import { getProtocolInfo } from "./tools/getProtocolInfo.js";
+import { getHistory } from "./tools/getHistory.js";
 
 // ─── Tool definitions ──────────────────────────────────────────────────────────
 
@@ -47,6 +48,27 @@ const TOOLS: Tool[] = [
     inputSchema: {
       type: "object",
       properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "getHistory",
+    description:
+      "Returns historical data from the Kaskad Protocol subgraph: recent liquidations, current market APY snapshots, " +
+      "and optionally a user's transaction history (supplies, borrows, repays) and active positions over time. " +
+      "Pass an address to get user-specific history.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        address: {
+          type: "string",
+          description: "Optional wallet address (0x...) to fetch user transaction history",
+        },
+        limit: {
+          type: "number",
+          description: "Number of historical records to return (default 10, max 50)",
+        },
+      },
       required: [],
     },
   },
@@ -102,6 +124,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case "getProtocolInfo": {
         result = getProtocolInfo();
+        break;
+      }
+
+      case "getHistory": {
+        const { address, limit } = (args ?? {}) as { address?: string; limit?: number };
+        result = await getHistory({ address, limit });
         break;
       }
 
