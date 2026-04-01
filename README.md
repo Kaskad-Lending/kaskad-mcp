@@ -1,6 +1,6 @@
 # kaskad-mcp
 
-MCP (Model Context Protocol) server for **Kaskad Protocol** — reads live on-chain state from the Igra Galleon Testnet and executes transactions via 7 tools.
+MCP (Model Context Protocol) server for **Kaskad Protocol** — reads live on-chain state from the Igra Galleon Testnet, executes transactions, and exposes tokenomics data via 11 tools.
 
 ## Tools
 
@@ -8,8 +8,11 @@ MCP (Model Context Protocol) server for **Kaskad Protocol** — reads live on-ch
 |------|-------------|
 | `getMarkets` | Live APY, utilization, liquidity for all active reserves |
 | `getPosition` | Wallet collateral, debt, health factor, supplied/borrowed positions, staking balance |
-| `getGovernanceParams` | Live DAO-voted parameters from KaskadGovernor (supplier/borrower emission split, eligibility thresholds, treasury ratios) |
+| `getGovernanceParams` | Live DAO-voted parameters from KaskadGovernor (emission split, eligibility thresholds, treasury ratios) |
+| `getEmissions` | KSKD emission state: epoch, vault depletion, supplier/borrower split, TWAL TVL |
+| `getUserRewards` | Claimable KSKD rewards for a wallet address |
 | `getProtocolInfo` | Static metadata + full AGENTS.md integration guide |
+| `getHistory` | Subgraph data: liquidations, APY snapshots, user transaction history |
 | `supply` | Supply an asset into the lending pool |
 | `borrow` | Borrow an asset against collateral |
 | `repay` | Repay outstanding debt |
@@ -18,21 +21,19 @@ MCP (Model Context Protocol) server for **Kaskad Protocol** — reads live on-ch
 ## Quick Start
 
 ```bash
-git clone <repo>
-cd kaskad-mcp
 npm install
 npm run build
+npm test        # 19 unit tests (pure functions, no network)
+node dist/index.js
 ```
 
 ## Wallet Setup
 
-> ⚠️ **Security — read before proceeding**
+> **Security — read before proceeding**
 > 
-> The MCP server requires a private key to sign transactions. **Always use a dedicated testnet wallet with no real funds.** Never use a wallet that holds mainnet assets, is linked to a hardware wallet, or is used for any other purpose.
+> The MCP server requires a private key to sign transactions. **Always use a dedicated testnet wallet with no real funds.** Never use a wallet that holds mainnet assets.
 >
-> Private keys stored in environment variables or local files are only as secure as the machine running the server. If you are running this on a shared or remote machine, treat the key as potentially exposed.
->
-> **Never commit your private key to git.** The `credentials/` directory is gitignored, but double-check before any commit.
+> **Never commit your private key to git.** The `credentials/` directory is gitignored.
 
 The server needs a wallet private key to sign transactions. Three options (in priority order):
 
@@ -46,7 +47,6 @@ node dist/index.js
 ```bash
 mkdir credentials
 echo '{"privateKey":"0xYOUR_TESTNET_PRIVATE_KEY"}' > credentials/wallet.json
-# credentials/ is gitignored — never commit this
 node dist/index.js
 ```
 
@@ -57,7 +57,7 @@ echo '{"privateKey":"0xYOUR_TESTNET_PRIVATE_KEY"}' > ~/.kaskad-mcp/wallet.json
 node dist/index.js
 ```
 
-> **Trust boundary:** The server enforces a minimum 10,000 iKAS reserve in the wallet at all times. Max 10% of wallet balance per asset per supply action.
+> **Trust boundary:** The server enforces a minimum 10,000 iKAS reserve in the wallet at all times.
 
 ## MCP Client Config
 
@@ -87,7 +87,7 @@ Add to your MCP client (e.g. Claude Desktop `claude_desktop_config.json`):
 | Explorer | `https://explorer.galleon-testnet.igralabs.com` |
 | dApp | `https://testnet.kaskad.live` |
 
-> **Gas note:** Igra Galleon requires a minimum 2000 Gwei gas price and ~1.7M gas for all pool operations. `eth_estimateGas` severely underestimates — all transactions use a static `gasLimit: 1_700_000n`.
+> **Gas note:** Igra Galleon requires minimum 2000 Gwei gas price. `eth_estimateGas` underestimates — all transactions use static `gasLimit: 1_700_000n`.
 
 ## Contract Addresses (current deploy)
 
@@ -99,6 +99,8 @@ Add to your MCP client (e.g. Claude Desktop `claude_desktop_config.json`):
 | UIPoolDataProvider | `0xbe38809914b552f295cD3e8dF2e77b3DA69cBC8b` |
 | RewardsController | `0x0eB9dc7DD4eDc2226a20093Ca0515D84b7529468` |
 | ActivityTracker | `0xa11FbfB7E69c3D8443335d30c5E6271bEE78b128` |
+| EmissionManager | `0xcbcb1c3be7f32bf718b702f7b1700c36058edd8b` |
+| EmissionVault | `0x18E5d69862E088B1ca326ACf48615875DF1763Af` |
 | KaskadGovernor | `0xE89b59a211C4645150830Bc63c112d01eE47e888` |
 | stKSKD Vault | `0xbA98cd5cC5E99058834072B3428de126b433d594` |
 | WrappedTokenGateway | `0xaeb50b9b0340f760ab7c17eafcde90971083b4f9` |
@@ -112,18 +114,28 @@ Add to your MCP client (e.g. Claude Desktop `claude_desktop_config.json`):
 | WIKAS (iKAS) | `0xA7CEd4eFE5C3aE0e5C26735559A77b1e38950a14` |
 | KSKD | `0x2d17780a59044D49FeEf0AA9cEaB1B6e3161aFf7` |
 
-> **Address maintenance:** After any testnet redeploy, re-extract token addresses from `/assets/index-*.js` in the dApp bundle and update `src/contracts.ts`. Bundle filename changes each deploy.
+## Architecture
 
-## Governance Parameters
-
-Call `getGovernanceParams` to read live DAO-voted values. Key param:
-
-- `EMISSION_SUPPLIERS_SHARE_BPS` — current split between supplier and borrower KSKD emissions (epoch 7: 4581 bps = 45.8% to suppliers, 54.2% to borrowers)
-
-Always call this before building a yield strategy — the emission split directly affects optimal positioning.
+```
+src/
+├── abi/              # ABI JSON fragments from Foundry artifacts
+├── contracts.ts      # Addresses, token registry, dead pool list
+├── rpc.ts            # Raw JSON-RPC client (fetch-based, no ethers Provider)
+├── typed-contracts.ts # Typed wrappers (Pool, Oracle, ERC20, Governor, Rewards, etc.)
+├── index.ts          # MCP server + health HTTP endpoint
+└── tools/
+    ├── getMarkets.ts
+    ├── getPosition.ts
+    ├── getGovernanceParams.ts
+    ├── getTokenomics.ts     # getEmissions + getUserRewards
+    ├── getHistory.ts        # Subgraph queries
+    ├── getProtocolInfo.ts
+    └── executeTransaction.ts # supply/borrow/repay/withdraw
+```
 
 ## Maintenance Notes
 
 - **APY formula:** `currentLiquidityRate` from `getReserveData` is in RAY (1e27). `rate / 1e25 = APY%`. Do NOT multiply by seconds_per_year.
-- **Dead pools:** 7 deprecated reserve addresses exist on-chain from prior deploys. These are filtered from all output. Funds in those pools are stranded and non-migratable via dApp.
-- **iKAS:** Native gas token. Balance read via `provider.getBalance()`, not ERC20. WIKAS is the wrapped form used internally by the pool — wallets never hold WIKAS directly.
+- **Dead pools:** 7 deprecated reserve addresses from prior deploys are filtered from all output.
+- **iKAS:** Native gas token. Balance via `provider.getBalance()`, not ERC20. WIKAS is the wrapped form used by the pool.
+- **Address updates:** After testnet redeploy, re-extract from dApp bundle (`/assets/index-*.js`) and update `src/contracts.ts`.

@@ -12,6 +12,9 @@ export const CONTRACTS = {
   activityTracker:       "0xa11FbfB7E69c3D8443335d30c5E6271bEE78b128",
   // Kaskad staking vault — stake/unstake KSKD, grants governance eligibility
   stKSKDVault:           "0xbA98cd5cC5E99058834072B3428de126b433d594",
+  // Tokenomics — emission system
+  emissionManager:       "0xcbcb1c3be7f32bf718b702f7b1700c36058edd8b",
+  emissionVault:         "0x18E5d69862E088B1ca326ACf48615875DF1763Af",
 } as const;
 
 // Dead pool underlying addresses (old testnet deploys — still on-chain but 0% APY, no UI support)
@@ -44,25 +47,5 @@ export const TOKEN_SYMBOLS: Record<string, string> = Object.fromEntries(
 // Active assets map — used for subgraph filtering
 export const ACTIVE_ASSETS: Record<string, string> = TOKENS;
 
-// Aave v3 Pool — minimal ABI fragments used for encoding/decoding
-export const POOL_ABI = [
-  // getReservesList() → address[]
-  "function getReservesList() view returns (address[])",
-  // getReserveData(address asset) → ReserveData struct
-  "function getReserveData(address asset) view returns (tuple(tuple(uint256 data) configuration, uint128 liquidityIndex, uint128 currentLiquidityRate, uint128 variableBorrowIndex, uint128 currentVariableBorrowRate, uint128 currentStableBorrowRate, uint40 lastUpdateTimestamp, uint16 id, address aTokenAddress, address stableDebtTokenAddress, address variableDebtTokenAddress, address interestRateStrategyAddress, uint128 accruedToTreasury, uint128 unbacked, uint128 isolationModeTotalDebt))",
-  // getUserAccountData(address user) → (totalCollateralBase, totalDebtBase, availableBorrowsBase, currentLiquidationThreshold, ltv, healthFactor)
-  "function getUserAccountData(address user) view returns (uint256 totalCollateralBase, uint256 totalDebtBase, uint256 availableBorrowsBase, uint256 currentLiquidationThreshold, uint256 ltv, uint256 healthFactor)",
-] as const;
-
-// Aave v3 Price Oracle — getAssetPrice
-export const ORACLE_ABI = [
-  "function getAssetPrice(address asset) view returns (uint256)",
-  "function getAssetsPrices(address[] assets) view returns (uint256[])",
-] as const;
-
-// ERC-20 minimal ABI
-export const ERC20_ABI = [
-  "function balanceOf(address account) view returns (uint256)",
-  "function decimals() view returns (uint8)",
-  "function symbol() view returns (string)",
-] as const;
+// ABI fragments are now sourced from Foundry artifacts in src/abi/*.json
+// Typed wrappers in src/typed-contracts.ts provide type-safe contract access

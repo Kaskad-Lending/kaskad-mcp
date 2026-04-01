@@ -6,7 +6,8 @@
   "scripts": {
     "build": "npx tsc",
     "start": "node dist/index.js",
-    "dev": "npx ts-node src/index.ts"
+    "dev": "npx ts-node src/index.ts",
+    "test": "npm run build && node --test test/pure-functions.test.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",

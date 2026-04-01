@@ -10,11 +10,11 @@
 import { ethers } from "ethers";
 import * as fs from "fs";
 import * as path from "path";
+import { RPC_URL, CONTRACTS, TOKENS } from "../contracts.js";
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
-const RPC_URL = "https://galleon-testnet.igralabs.com:8545";
-const POOL_ADDRESS = "0xA1D84fc43f7F2D803a2d64dbBa4A90A9A79E3F24";
+const POOL_ADDRESS = CONTRACTS.poolProxy;
 // Trust boundary: keep minimum 10,000 iKAS (native gas token) in wallet. All other assets freely usable.
 // iKAS is the NATIVE gas token on Igra Galleon — balance read via provider.getBalance(), NOT balanceOf().
 // Set by Jack on 2026-04-01.
@@ -70,32 +70,26 @@ function loadWallet(provider: ethers.JsonRpcProvider): ethers.Wallet {
   );
 }
 
-// ─── ABI fragments ───────────────────────────────────────────────────────────
+// ─── ABI fragments (write operations — not in contracts.ts which has view-only) ─
 
-const POOL_ABI = [
+const POOL_WRITE_ABI = [
   "function supply(address asset, uint256 amount, address onBehalfOf, uint16 referralCode) external",
   "function borrow(address asset, uint256 amount, uint256 interestRateMode, uint16 referralCode, address onBehalfOf) external",
   "function repay(address asset, uint256 amount, uint256 interestRateMode, address onBehalfOf) external returns (uint256)",
   "function withdraw(address asset, uint256 amount, address to) external returns (uint256)",
 ];
 
-const ERC20_ABI = [
+const ERC20_WRITE_ABI = [
   "function approve(address spender, uint256 amount) external returns (bool)",
   "function balanceOf(address account) external view returns (uint256)",
   "function decimals() external view returns (uint8)",
   "function symbol() external view returns (string)",
 ];
 
-// ─── Asset registry ──────────────────────────────────────────────────────────
-
+// Asset registry — delegate to TOKENS from contracts.ts, add WIKAS alias
 const ASSETS: Record<string, string> = {
-  IGRA:  "0x04443457b050BBaa195bb71Ef6CCDb519CcB1f0f",
-  USDC:  "0x32F59763c4b7F385DFC1DBB07742DaD4eeEccdb2",
-  WBTC:  "0x9dAc4c79bE2C541BE3584CE5244F3942554D6355",
-  WETH:  "0xB4129cEBD85bDEcdD775f539Ec8387619a0f1FAC",
-  IKAS:  "0xA7CEd4eFE5C3aE0e5C26735559A77b1e38950a14",
-  WIKAS: "0x8ce361602B935680E8DeC218b820ff5056BeB7af",
-  KSKD:  "0x2d17780a59044D49FeEf0AA9cEaB1B6e3161aFf7",
+  ...TOKENS,
+  WIKAS: TOKENS.IKAS, // WIKAS on-chain = IKAS in UI
 };
 
 // ─── Trust boundary enforcement ──────────────────────────────────────────────
@@ -146,8 +140,8 @@ export async function supplyAsset(params: {
 
   const provider = new ethers.JsonRpcProvider(RPC_URL);
   const wallet = loadWallet(provider);
-  const token = new ethers.Contract(assetAddress, ERC20_ABI, wallet);
-  const pool = new ethers.Contract(POOL_ADDRESS, POOL_ABI, wallet);
+  const token = new ethers.Contract(assetAddress, ERC20_WRITE_ABI, wallet);
+  const pool = new ethers.Contract(POOL_ADDRESS, POOL_WRITE_ABI, wallet);
 
   const decimals = await token.decimals() as number;
   const amountWei = ethers.parseUnits(amount.toString(), decimals);
@@ -190,8 +184,8 @@ export async function borrowAsset(params: {
 
   const provider = new ethers.JsonRpcProvider(RPC_URL);
   const wallet = loadWallet(provider);
-  const token = new ethers.Contract(assetAddress, ERC20_ABI, wallet);
-  const pool = new ethers.Contract(POOL_ADDRESS, POOL_ABI, wallet);
+  const token = new ethers.Contract(assetAddress, ERC20_WRITE_ABI, wallet);
+  const pool = new ethers.Contract(POOL_ADDRESS, POOL_WRITE_ABI, wallet);
 
   const decimals = await token.decimals() as number;
   const amountWei = ethers.parseUnits(amount.toString(), decimals);
@@ -231,8 +225,8 @@ export async function repayAsset(params: {
 
   const provider = new ethers.JsonRpcProvider(RPC_URL);
   const wallet = loadWallet(provider);
-  const token = new ethers.Contract(assetAddress, ERC20_ABI, wallet);
-  const pool = new ethers.Contract(POOL_ADDRESS, POOL_ABI, wallet);
+  const token = new ethers.Contract(assetAddress, ERC20_WRITE_ABI, wallet);
+  const pool = new ethers.Contract(POOL_ADDRESS, POOL_WRITE_ABI, wallet);
 
   const decimals = await token.decimals() as number;
   const amountWei = amount === -1
@@ -306,7 +300,7 @@ export async function withdrawNativeIKAS(params: {
     : ethers.parseUnits(amount.toString(), 18);
 
   // Approve gateway to spend aWIKAS on our behalf
-  const aToken = new ethers.Contract(AWIKAS_ADDRESS, ERC20_ABI, wallet);
+  const aToken = new ethers.Contract(AWIKAS_ADDRESS, ERC20_WRITE_ABI, wallet);
   await aToken.approve(WRAPPED_TOKEN_GATEWAY, amountWei, { gasPrice: GAS_PRICE });
 
   const gateway = new ethers.Contract(WRAPPED_TOKEN_GATEWAY, GATEWAY_ABI, wallet);
@@ -342,8 +336,8 @@ export async function withdrawAsset(params: {
 
   const provider = new ethers.JsonRpcProvider(RPC_URL);
   const wallet = loadWallet(provider);
-  const token = new ethers.Contract(assetAddress, ERC20_ABI, wallet);
-  const pool = new ethers.Contract(POOL_ADDRESS, POOL_ABI, wallet);
+  const token = new ethers.Contract(assetAddress, ERC20_WRITE_ABI, wallet);
+  const pool = new ethers.Contract(POOL_ADDRESS, POOL_WRITE_ABI, wallet);
 
   const decimals = await token.decimals() as number;
   const amountWei = amount === -1

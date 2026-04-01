@@ -12,6 +12,7 @@ import { getProtocolInfo } from "./tools/getProtocolInfo.js";
 import { getHistory } from "./tools/getHistory.js";
 import { getGovernanceParams } from "./tools/getGovernanceParams.js";
 import { supplyAsset, borrowAsset, repayAsset, withdrawAsset, supplyNativeIKAS, withdrawNativeIKAS } from "./tools/executeTransaction.js";
+import { getEmissions, getUserRewards } from "./tools/getTokenomics.js";
 
 // ─── Tool definitions ──────────────────────────────────────────────────────────
 
@@ -144,6 +145,34 @@ const TOOLS: Tool[] = [
       required: [],
     },
   },
+  {
+    name: "getEmissions",
+    description:
+      "Returns KSKD emission state: current epoch, emission vault balance (remaining vs total), " +
+      "epoch timing, supplier/borrower split, and TWAL TVL from activity tracker. " +
+      "Use this to understand current emission APY context and vault depletion trajectory.",
+    inputSchema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "getUserRewards",
+    description:
+      "Returns claimable KSKD rewards for a wallet address. Shows accrued and claimable amounts " +
+      "from emission incentives. Eligibility requires meeting uptime and minimum position thresholds.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        address: {
+          type: "string",
+          description: "Wallet address (0x...) to check rewards for",
+        },
+      },
+      required: ["address"],
+    },
+  },
 ];
 
 // ─── Server setup ──────────────────────────────────────────────────────────────
@@ -210,6 +239,27 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case "getHistory": {
         const { address, limit } = (args ?? {}) as { address?: string; limit?: number };
         result = await getHistory({ address, limit });
+        break;
+      }
+
+      case "getEmissions": {
+        result = await getEmissions();
+        break;
+      }
+
+      case "getUserRewards": {
+        const { address } = (args ?? {}) as { address?: string };
+        if (!address) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({ error: "Missing required parameter: address" }),
+              },
+            ],
+          };
+        }
+        result = await getUserRewards({ address });
         break;
       }
 

@@ -1,11 +1,10 @@
 import { SUBGRAPH_URL, ACTIVE_ASSETS } from '../contracts.js';
 
-const RAY = 10n ** 27n;
 const RAY_PERCENT = 10n ** 25n;
 
 function rayToAPY(rayStr: string): number {
   const big = BigInt(rayStr);
-  return Number((big * 10_000n) / RAY_PERCENT) / 100;
+  return Number((big * 10_000n) / RAY_PERCENT) / 10_000;
 }
 
 async function subgraphQuery(query: string): Promise<any> {

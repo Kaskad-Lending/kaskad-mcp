@@ -1,5 +1,4 @@
-import { ethers } from "ethers";
-import { RPC_URL } from "../contracts.js";
+import { GovernorContract } from "../typed-contracts.js";
 
 // KaskadGovernor — reads live DAO-voted parameters via epochDecision(epoch, decision)
 const GOVERNOR = "0xE89b59a211C4645150830Bc63c112d01eE47e888";
@@ -32,31 +31,19 @@ const BOUNDS: Record<number, { min: number; max: number; unit: string }> = {
   10: { min: 3500, max: 6500, unit: "bps" },
 };
 
-const IFACE = new ethers.Interface([
-  "function epochDecision(uint256 epoch, uint8 decision) view returns (uint16)",
-  "function currentEpoch() view returns (uint256)",
-]);
+const governor = new GovernorContract(GOVERNOR);
 
 export async function getGovernanceParams() {
-  const provider = new ethers.JsonRpcProvider(RPC_URL);
-
-  // currentEpoch is the live epoch; last finalized = currentEpoch - 1
-  const currentEpochRaw = await provider.call({
-    to: GOVERNOR,
-    data: IFACE.encodeFunctionData("currentEpoch", []),
-  });
-  const currentEpoch = Number(BigInt(currentEpochRaw));
+  const currentEpoch = Number(await governor.currentEpoch());
   const queryEpoch = currentEpoch > 0 ? currentEpoch - 1 : 0;
 
   const params: Record<string, { value: number; pct?: string; min: number; max: number; unit: string }> = {};
 
   for (const [dStr, name] of Object.entries(DECISION_NAMES)) {
     const d = Number(dStr);
+    const b = BOUNDS[d];
     try {
-      const calldata = IFACE.encodeFunctionData("epochDecision", [queryEpoch, d]);
-      const result = await provider.call({ to: GOVERNOR, data: calldata });
-      const val = parseInt(result.slice(-4), 16);
-      const b = BOUNDS[d];
+      const val = await governor.epochDecision(queryEpoch, d);
       params[name] = {
         value: val,
         ...(b.unit === "bps" ? { pct: (val / 100).toFixed(1) + "%" } : {}),
@@ -65,7 +52,7 @@ export async function getGovernanceParams() {
         unit: b.unit,
       };
     } catch {
-      params[name] = { value: -1, min: BOUNDS[d].min, max: BOUNDS[d].max, unit: BOUNDS[d].unit };
+      params[name] = { value: -1, min: b.min, max: b.max, unit: b.unit };
     }
   }
 

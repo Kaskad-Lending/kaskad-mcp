@@ -1,4 +1,4 @@
-import { AbiCoder, Interface } from "ethers";
+import { AbiCoder, Interface, InterfaceAbi } from "ethers";
 import { RPC_URL } from "./contracts.js";
 
 let _reqId = 1;
@@ -54,12 +54,12 @@ export function decode(types: string[], data: string): unknown[] {
 
 /** Call a view function using ethers Interface */
 export async function callFunction(
-  abi: readonly string[],
+  abi: InterfaceAbi,
   address: string,
   funcName: string,
   args: unknown[] = []
 ): Promise<unknown[]> {
-  const iface = new Interface(abi as string[]);
+  const iface = new Interface(abi);
   const encoded = iface.encodeFunctionData(funcName, args);
   const result = await ethCall(address, encoded);
   return iface.decodeFunctionResult(funcName, result) as unknown[];

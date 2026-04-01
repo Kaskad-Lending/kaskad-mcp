@@ -1,12 +1,12 @@
-import { CONTRACTS, POOL_ABI, ORACLE_ABI, TOKEN_SYMBOLS, TOKENS } from "../contracts.js";
-import { callFunction, getBlockNumber, safeCall } from "../rpc.js";
+import { CONTRACTS, TOKEN_SYMBOLS, TOKENS, DEAD_POOL_ADDRESSES } from "../contracts.js";
+import { getBlockNumber, safeCall } from "../rpc.js";
+import { PoolContract, OracleContract, ERC20Contract } from "../typed-contracts.js";
 
 // currentLiquidityRate / variableBorrowRate from getReserveData are already annual rates in RAY (1e27)
 // APY% = rate / 1e25  (i.e. rate / 1e27 * 100)
 const RAY_PERCENT = 10n ** 25n;
-const WAD = 10n ** 18n;
 
-interface MarketData {
+export interface MarketData {
   asset: string;
   address: string;
   supplyAPY: number;
@@ -17,7 +17,7 @@ interface MarketData {
   liquidityAvailableUSD: number;
 }
 
-interface MarketsResult {
+export interface MarketsResult {
   protocol: string;
   network: string;
   chainId: number;
@@ -28,12 +28,12 @@ interface MarketsResult {
 /** Convert annual ray rate → APY percentage (e.g. 47.66)
  *  currentLiquidityRate is already annual in RAY units → divide by 1e25 to get %
  */
-function rayToAPY(rateBig: bigint): number {
+export function rayToAPY(rateBig: bigint): number {
   return Number((rateBig * 10_000n) / RAY_PERCENT) / 10_000;
 }
 
 /** Convert base units price (8 decimals from Aave oracle) + token amount → USD */
-function toUSD(amount: bigint, price: bigint, decimals: number): number {
+export function toUSD(amount: bigint, price: bigint, decimals: number): number {
   // price has 8 decimals (Aave oracle base currency = USD with 8 dec)
   // amount has `decimals` decimals
   // result = amount * price / (10^decimals * 10^8)
@@ -41,91 +41,54 @@ function toUSD(amount: bigint, price: bigint, decimals: number): number {
   return Number((amount * price * 1_000_000n) / denom) / 1_000_000;
 }
 
+const pool = new PoolContract(CONTRACTS.poolProxy);
+const oracle = new OracleContract(CONTRACTS.priceOracle);
+
 export async function getMarkets(): Promise<MarketsResult | { error: string; rpc: string }> {
   return safeCall(async () => {
-    // 1. Block number
     const blockNumber = await getBlockNumber();
 
-    // 2. Get reserves list
-    const [reserveAddresses] = await callFunction(
-      POOL_ABI,
-      CONTRACTS.poolProxy,
-      "getReservesList",
-      []
-    );
+    const allAddresses = await pool.getReservesList();
+
     // Filter to active whitelisted tokens only (excludes stale reserves from prior testnet deploys)
     const ACTIVE_ADDRESSES = new Set(Object.values(TOKENS).map(a => a.toLowerCase()));
-    const addresses = (reserveAddresses as string[]).filter(a => ACTIVE_ADDRESSES.has(a.toLowerCase()));
-
-    // 3. Get prices for all reserves
-    const [prices] = await callFunction(
-      ORACLE_ABI,
-      CONTRACTS.priceOracle,
-      "getAssetsPrices",
-      [addresses]
+    const addresses = allAddresses.filter(
+      a => ACTIVE_ADDRESSES.has(a.toLowerCase()) && !DEAD_POOL_ADDRESSES.has(a.toLowerCase())
     );
-    const priceList = prices as bigint[];
 
-    // 4. Fetch reserve data for each
+    const priceList = await oracle.getAssetsPrices(addresses);
+
     const markets: MarketData[] = [];
 
     for (let i = 0; i < addresses.length; i++) {
       const addr = addresses[i];
       const price = priceList[i] ?? 0n;
 
-      let reserveResult: unknown[];
+      let rd;
       try {
-        reserveResult = await callFunction(
-          POOL_ABI,
-          CONTRACTS.poolProxy,
-          "getReserveData",
-          [addr]
-        );
+        rd = await pool.getReserveData(addr);
       } catch {
-        continue; // skip if individual reserve fails
+        continue;
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const rd = (reserveResult[0] as any);
+      const liquidityRate = rd.currentLiquidityRate ?? 0n;
+      const varBorrowRate = rd.currentVariableBorrowRate ?? 0n;
 
-      const liquidityRate: bigint = rd.currentLiquidityRate ?? 0n;
-      const varBorrowRate: bigint = rd.currentVariableBorrowRate ?? 0n;
-      const liquidityIndex: bigint = rd.liquidityIndex ?? WAD;
-      const varBorrowIndex: bigint = rd.variableBorrowIndex ?? WAD;
+      // Fetch actual decimals from underlying token (USDC=6, WBTC=8, others=18)
+      const erc20 = new ERC20Contract(addr);
+      let decimals = 18;
+      try {
+        decimals = await erc20.decimals();
+      } catch { /* default 18 */ }
 
-      // aToken totalSupply ≈ scaled supply * liquidityIndex
-      // We approximate from the reserve config bits or use token balances
-      // For simplicity: read aToken balance of poolProxy (totalScaledSupply * liquidityIndex / 1e27)
-      // Easier: use configuration to infer — but let's use available data
-      // We'll read decimals from ERC20 for accuracy; assume 18 for unknowns
-      const decimals = 18; // most tokens
-
-      // Estimate total supply: we can read aToken totalSupply
-      const aTokenAddr: string = rd.aTokenAddress;
-      const varDebtAddr: string = rd.variableDebtTokenAddress;
+      const aToken = new ERC20Contract(rd.aTokenAddress);
+      const varDebtToken = new ERC20Contract(rd.variableDebtTokenAddress);
 
       let totalATokens = 0n;
       let totalVarDebt = 0n;
 
-      try {
-        const [supplyRes] = await callFunction(
-          ["function totalSupply() view returns (uint256)"],
-          aTokenAddr,
-          "totalSupply",
-          []
-        );
-        totalATokens = supplyRes as bigint;
-      } catch { /* ignore */ }
-
-      try {
-        const [debtRes] = await callFunction(
-          ["function totalSupply() view returns (uint256)"],
-          varDebtAddr,
-          "totalSupply",
-          []
-        );
-        totalVarDebt = debtRes as bigint;
-      } catch { /* ignore */ }
+      try { totalATokens = await aToken.totalSupply(); } catch { /* ignore */ }
+      try { totalVarDebt = await varDebtToken.totalSupply(); } catch { /* ignore */ }
 
       const totalSupplyUSD = toUSD(totalATokens, price, decimals);
       const totalBorrowUSD = toUSD(totalVarDebt, price, decimals);
