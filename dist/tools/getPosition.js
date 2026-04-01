@@ -41,7 +41,13 @@ async function getPosition(userAddress) {
             if (contracts_js_1.DEAD_POOL_ADDRESSES.has(addr.toLowerCase()))
                 continue;
             const price = priceList[i] ?? 0n;
-            const decimals = 18; // assume 18; accurate enough for testnet
+            // Fetch actual decimals from the underlying token (USDC=6, WBTC=8, others=18)
+            let decimals = 18;
+            try {
+                const [dec] = await (0, rpc_js_1.callFunction)(contracts_js_1.ERC20_ABI, addr, "decimals", []);
+                decimals = Number(dec);
+            }
+            catch { /* default 18 */ }
             let reserveResult;
             try {
                 reserveResult = await (0, rpc_js_1.callFunction)(contracts_js_1.POOL_ABI, contracts_js_1.CONTRACTS.poolProxy, "getReserveData", [addr]);

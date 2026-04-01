@@ -87,7 +87,13 @@ export async function getPosition(
       // Skip dead pools (deprecated testnet deploys — stranded funds, no dApp support)
       if (DEAD_POOL_ADDRESSES.has(addr.toLowerCase())) continue;
       const price = priceList[i] ?? 0n;
-      const decimals = 18; // assume 18; accurate enough for testnet
+
+      // Fetch actual decimals from the underlying token (USDC=6, WBTC=8, others=18)
+      let decimals = 18;
+      try {
+        const [dec] = await callFunction(ERC20_ABI, addr, "decimals", []);
+        decimals = Number(dec);
+      } catch { /* default 18 */ }
 
       let reserveResult: unknown[];
       try {
