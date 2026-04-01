@@ -6,14 +6,57 @@ Welcome to the Kaskad Lending integration guide for Agents. This document provid
 
 > **CRITICAL**: Galleon testnet silently drops transactions with insufficient gas. If a transaction disappears or `ethers.js` throws a timeout/revert without a reason, it is almost certainly a gas exception. The Galleon node incorrectly estimates `maxPriorityFeePerGas` at 500 Gwei, but the actual network minimum is **`2000 Gwei`**. Any transaction below `2000 Gwei` will be dropped.
 
+## MCP Tools (Recommended)
+
+If you have the `kaskad-mcp` server connected, **use MCP tools instead of raw RPC/subgraph calls**. They handle ABI encoding, decimals, dead pool filtering, and error wrapping automatically.
+
+| Tool | Use for |
+|------|---------|
+| `getMarkets` | All reserve APYs, TVL, utilization — replaces manual `getReserveData` loops |
+| `getPosition` | Wallet collateral/debt/health factor + stKSKD balance |
+| `getGovernanceParams` | Live DAO-voted parameters (emission split, eligibility thresholds) |
+| `getEmissions` | Emission vault state, epoch timing, TWAL TVL |
+| `getUserRewards` | Claimable KSKD rewards for a wallet |
+| `getProtocolInfo` | Static metadata + this guide |
+| `getHistory` | Subgraph: liquidations, APY snapshots, user tx history |
+| `supply` / `borrow` / `repay` / `withdraw` | Execute pool operations (testnet only) |
+
+**Always call `getGovernanceParams` before strategizing** — the emission split directly affects optimal positioning.
+
+---
+
 ## Network & Key Addresses
 
 - **RPC URL:** `https://galleon-testnet.igralabs.com:8545`
 - **Chain ID:** `38836`
 - **Subgraph Endpoint:** `https://testnet.kaskad.live/subgraphs/name/galleon-testnet-aave-v3`
-- **Pool Proxy (Aave V3):** `0xA1D84fc43f7F2D803a2d64dbBa4A90A9A79E3F24`
-- **PoolAddressesProvider:** `0x9DB9797733FE5F734724Aa05D29Fa39563563Af5`
-- **UiPoolDataProvider:** `0xbe38809914b552f295cD3e8dF2e77b3DA69cBC8b`
+
+### Core Contracts
+
+| Contract | Address |
+|----------|---------|
+| Pool Proxy (Aave V3) | `0xA1D84fc43f7F2D803a2d64dbBa4A90A9A79E3F24` |
+| PoolAddressesProvider | `0x9DB9797733FE5F734724Aa05D29Fa39563563Af5` |
+| UiPoolDataProvider | `0xbe38809914b552f295cD3e8dF2e77b3DA69cBC8b` |
+| PriceOracle | `0xc1198A9d400306a0406fD3E3Ad67140b3D059f48` |
+| KaskadGovernor | `0xE89b59a211C4645150830Bc63c112d01eE47e888` |
+| RewardsController | `0x0eB9dc7DD4eDc2226a20093Ca0515D84b7529468` |
+| ActivityTracker | `0xa11FbfB7E69c3D8443335d30c5E6271bEE78b128` |
+| EmissionManager | `0xcbcb1c3be7f32bf718b702f7b1700c36058edd8b` |
+| EmissionVault | `0x18E5d69862E088B1ca326ACf48615875DF1763Af` |
+| stKSKD Vault | `0xbA98cd5cC5E99058834072B3428de126b433d594` |
+| WrappedTokenGateway | `0xaeb50b9b0340f760ab7c17eafcde90971083b4f9` |
+
+### Token Addresses (current deploy)
+
+| Token | Address |
+|-------|---------|
+| KSKD | `0x2d17780a59044D49FeEf0AA9cEaB1B6e3161aFf7` |
+| USDC | `0x32F59763c4b7F385DFC1DBB07742DaD4eeEccdb2` |
+| WBTC | `0x9dAc4c79bE2C541BE3584CE5244F3942554D6355` |
+| WETH | `0xB4129cEBD85bDEcdD775f539Ec8387619a0f1FAC` |
+| WIKAS (iKAS) | `0xA7CEd4eFE5C3aE0e5C26735559A77b1e38950a14` |
+| IGRA | `0x04443457b050BBaa195bb71Ef6CCDb519CcB1f0f` |
 
 ---
 
@@ -113,6 +156,23 @@ cast send 0xA1D84fc43f7F2D803a2d64dbBa4A90A9A79E3F24 \
 
 ---
 
+## 4. Ethers.js & Frontend Agents
+
+```typescript
+const tx = await pool.supply(
+  asset, amount, user, 0,
+  {
+    maxPriorityFeePerGas: 2_000_000_000_000n, // 2000 Gwei Minimum!
+    maxFeePerGas: 2_001_000_000_000n,
+    type: 2,
+    gasLimit: 1_700_000n, // 500K is insufficient — Galleon requires ~1.7M for pool ops
+  }
+);
+await tx.wait();
+```
+
+---
+
 ## 5. Tokenomics Context for Agents
 
 APY on Kaskad = **real yield** (borrower interest) + **KSKD emission incentives**. Without understanding the emission schedule and eligibility rules, agents will systematically misread yield signals.
@@ -155,7 +215,7 @@ APY on Kaskad = **real yield** (borrower interest) + **KSKD emission incentives*
 ### 5.4 Eligibility Rules (What qualifies for emissions)
 
 **Suppliers must:**
-- Maintain minimum position ≥ $100 (adjustable ±15%, floor is $100 — never lower)
+- Maintain minimum position ≥ $100 default (governance-adjustable, contract floor is $85)
 - Maintain ≥ 90% uptime per epoch (adjustable ±2.5%, floor is 80%)
 - Sustain position for full epoch — mid-epoch entry/exit reduces proportional allocation
 
@@ -216,23 +276,23 @@ Milestones use TWAL/TWAP validation (time-weighted — no flash TVL manipulation
 
 ---
 
-### 5.9 Bounded Governance Parameters (Complete — sourced from DecisionParams.sol + Whitepaper V1)
-All parameters below are adjustable by DAO vote within the stated bounds only:
+### 5.9 Bounded Governance Parameters (sourced from DecisionParams.sol)
+All parameters below are adjustable by DAO vote within the stated bounds only. **Call `getGovernanceParams()` for current live values.**
 
-| Parameter | Source (DecisionParams.sol) | Floor | Ceiling | Current default |
-|-----------|----------------------------|-------|---------|----------------|
-| Emission split (supplier %) | `EMISSION_SUPPLIERS_SHARE_BPS` | 40% | 60% | ~60% |
-| Supplier min uptime | `TVL_MIN_SUPPLY_UPTIME_BPS` | 87.5% | 92.5% | 90% |
-| Borrower min uptime | `BORROWER_MIN_UPTIME_BPS` | 50% | 55% | 50% |
-| Borrower min LTV | `BORROWER_MIN_LTV_BPS` | 15% | 20% | 15% |
-| Supplier min deposit (USD) | `TVL_MIN_SUPPLY_USD` | $85 | $115 | $100 |
-| Undistributed emissions → next epoch | `UNDISTRIBUTED_TO_NEXT_EPOCH_BPS` | 35% | 65% | governance |
-| DAO revenue → TVL incentives | `DAO_TVL_INCENTIVES_SHARE_BPS` | 50% | 80% | 50% |
-| DAO revenue → Supply Adjustment | `DAO_BURN_SHARE_BPS` | 15% | 20% | 15% |
-| DAO revenue → Kaspa Core Funding | `DAO_KASPA_CORE_SHARE_BPS` | 5% | 7.5% | 5% |
-| Milestone bonus split (TVL vs vested) | `MILESTONE_TVL_VS_VESTED_SHARE_BPS` | 35% | 65% | governance |
-| DAO epoch outflow cap | — | — | 85% of DAO balance | 85% |
-| Supply Adjustment size cap | — | 5% | 5% of 30d avg vol | 5% |
+| Parameter | Source (DecisionParams.sol) | Floor | Ceiling |
+|-----------|----------------------------|-------|---------|
+| Emission split (supplier %) | `EMISSION_SUPPLIERS_SHARE_BPS` | 40% | 60% |
+| Supplier min uptime | `TVL_MIN_SUPPLY_UPTIME_BPS` | 87.5% | 92.5% |
+| Borrower min uptime | `BORROWER_MIN_UPTIME_BPS` | 50% | 55% |
+| Borrower min LTV | `BORROWER_MIN_LTV_BPS` | 15% | 20% |
+| Supplier min deposit (USD) | `TVL_MIN_SUPPLY_USD` | $85 | $115 |
+| Undistributed emissions → next epoch | `UNDISTRIBUTED_TO_NEXT_EPOCH_BPS` | 35% | 65% |
+| DAO revenue → TVL incentives | `DAO_TVL_INCENTIVES_SHARE_BPS` | 50% | 80% |
+| DAO revenue → Supply Adjustment | `DAO_BURN_SHARE_BPS` | 15% | 20% |
+| DAO revenue → Kaspa Core Funding | `DAO_KASPA_CORE_SHARE_BPS` | 5% | 7.5% |
+| Milestone bonus split (TVL vs vested) | `MILESTONE_TVL_VS_VESTED_SHARE_BPS` | 35% | 65% |
+| DAO epoch outflow cap | — | — | 85% of DAO balance |
+| Supply Adjustment size cap | — | 5% | 5% of 30d avg vol |
 
 **What governance CANNOT do:**
 - Modify the 65/35 treasury split (hardcoded in routing contracts)
@@ -240,7 +300,7 @@ All parameters below are adjustable by DAO vote within the stated bounds only:
 - Reduce any parameter below its contract-enforced floor
 - Distribute treasury assets without: governance proposal → 48h timelock → 24h challenge window → execution
 
-**stKSKD note (planned, not live):** Future roadmap includes option to borrow against staked KSKD (stKSKD) as collateral. Not in current contract deployment — do not model this as available functionality.
+**stKSKD note:** The stKSKD vault is deployed at `0xbA98cd5cC5E99058834072B3428de126b433d594`. Staking KSKD grants governance eligibility (checked by `isEligibleBorrower`/`isEligibleSupplier` on the activity tracker). Borrowing against stKSKD as collateral is **not yet enabled** — do not model stKSKD as usable collateral.
 
 ---
 
@@ -257,19 +317,3 @@ All parameters below are adjustable by DAO vote within the stated bounds only:
 | Institutional Participation | 3% |
 | Commitment Incentives | 1.24% |
 
----
-
-## 4. Ethers.js & Frontend Agents
-
-```typescript
-const tx = await pool.supply(
-  asset, amount, user, 0,
-  {
-    maxPriorityFeePerGas: 2_000_000_000_000n, // 2000 Gwei Minimum!
-    maxFeePerGas: 2_001_000_000_000n,
-    type: 2,
-    gasLimit: 1_700_000n, // 500K is insufficient — Galleon requires ~1.7M for pool ops
-  }
-);
-await tx.wait();
-```
