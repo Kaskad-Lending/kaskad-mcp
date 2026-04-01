@@ -156,7 +156,7 @@ export async function supplyAsset(params: {
   await enforceTrustBoundary(token, wallet.address, amountWei, assetAddress, assetUpper);
 
   // Approve pool to spend tokens
-  const approveTx = await token.approve(POOL_ADDRESS, amountWei, { gasPrice: GAS_PRICE });
+  const approveTx = await token.approve(POOL_ADDRESS, amountWei, { gasPrice: GAS_PRICE, gasLimit: 200000n });
   await approveTx.wait();
 
   // Supply — explicit gasLimit required; Igra RPC underestimates gas on eth_estimateGas
@@ -239,11 +239,9 @@ export async function repayAsset(params: {
     ? ethers.MaxUint256  // repay full debt
     : ethers.parseUnits(amount.toString(), decimals);
 
-  if (amountWei !== ethers.MaxUint256) {
-    await token.approve(POOL_ADDRESS, amountWei);
-  } else {
-    await token.approve(POOL_ADDRESS, ethers.MaxUint256);
-  }
+  const approveAmount = amountWei !== ethers.MaxUint256 ? amountWei : ethers.MaxUint256;
+  const approveTx = await token.approve(POOL_ADDRESS, approveAmount, { gasPrice: GAS_PRICE, gasLimit: 200000n });
+  await approveTx.wait();
 
   const repayTx = await pool.repay(assetAddress, amountWei, interestRateMode, wallet.address, { gasPrice: GAS_PRICE, gasLimit: 1700000n });
   const receipt = await repayTx.wait();
