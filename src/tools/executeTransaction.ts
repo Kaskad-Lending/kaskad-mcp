@@ -15,10 +15,10 @@ import { RPC_URL, CONTRACTS, TOKENS } from "../contracts.js";
 // ─── Config ──────────────────────────────────────────────────────────────────
 
 const POOL_ADDRESS = CONTRACTS.poolProxy;
-// Trust boundary: keep minimum 10,000 iKAS (native gas token) in wallet. All other assets freely usable.
+// Trust boundary: keep minimum 100 iKAS (native gas token) in wallet for gas fees. All other assets freely usable.
 // iKAS is the NATIVE gas token on Igra Galleon — balance read via provider.getBalance(), NOT balanceOf().
 // Set by Jack on 2026-04-01.
-const IKAS_MINIMUM = ethers.parseUnits("10000", "ether"); // 18 decimals, same as ETH
+const IKAS_MINIMUM = ethers.parseUnits("100", "ether"); // 18 decimals, same as ETH
 
 // Igra Galleon testnet requires minimum 2000 Gwei gas price
 const GAS_PRICE = ethers.parseUnits("2000", "gwei");

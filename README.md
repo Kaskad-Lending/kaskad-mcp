@@ -57,7 +57,7 @@ echo '{"privateKey":"0xYOUR_TESTNET_PRIVATE_KEY"}' > ~/.kaskad-mcp/wallet.json
 node dist/index.js
 ```
 
-> **Trust boundary:** The server enforces a minimum 10,000 iKAS reserve in the wallet at all times.
+> **Trust boundary:** The server enforces a minimum 100 iKAS reserve in the wallet at all times (to cover gas fees).
 
 ## MCP Client Config
 
