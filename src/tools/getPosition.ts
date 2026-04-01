@@ -23,6 +23,7 @@ interface PositionResult {
   healthFactor: number | string;
   ltv: number;
   liquidationThreshold: number;
+  avgSupplyAPY: number;
   netPositionAPY: number;
   positions: PositionEntry[];
 }
@@ -179,8 +180,9 @@ export async function getPosition(
       stakedKSKD = Math.round(Number((stShares as bigint) * 1_000_000n / WAD)) / 1_000_000;
     } catch { /* ignore */ }
 
-    // Compute net position APY: (sum of supply yield - sum of borrow cost) / total collateral
+    // Compute APY metrics
     let netPositionAPY = 0;
+    let avgSupplyAPY = 0;
     try {
       const marketsData = await getMarkets();
       if ("error" in marketsData) throw new Error("markets unavailable");
@@ -191,6 +193,7 @@ export async function getPosition(
 
       let totalSupplyYieldUSD = 0;
       let totalBorrowCostUSD = 0;
+      let totalSuppliedUSD = 0;
       const totalCollateralUSD = baseToUSD(totalCollateralBase);
 
       for (const pos of positions) {
@@ -198,11 +201,20 @@ export async function getPosition(
         if (!mk) continue;
         totalSupplyYieldUSD += pos.suppliedUSD * (mk.supplyAPY / 100);
         totalBorrowCostUSD += pos.borrowedUSD * (mk.borrowAPY / 100);
+        totalSuppliedUSD += pos.suppliedUSD;
       }
 
+      // avgSupplyAPY: weighted average of supply APY across supplied assets (matches dApp "Avg APY" in Supply card)
+      avgSupplyAPY = totalSuppliedUSD > 0
+        ? Math.round((totalSupplyYieldUSD / totalSuppliedUSD) * 10000) / 100
+        : 0;
+
+      // netPositionAPY: (supply yield - borrow cost) / total collateral — true net yield
       if (totalCollateralUSD > 0) {
         netPositionAPY = Math.round(((totalSupplyYieldUSD - totalBorrowCostUSD) / totalCollateralUSD) * 10000) / 100;
       }
+
+
     } catch { /* ignore — net APY is best-effort */ }
 
     return {
@@ -213,6 +225,7 @@ export async function getPosition(
       healthFactor: wadToHF(healthFactor),
       ltv: Number(ltv) / 100,
       liquidationThreshold: Number(currentLiquidationThreshold) / 100,
+      avgSupplyAPY,
       netPositionAPY,
       positions,
       staking: {
