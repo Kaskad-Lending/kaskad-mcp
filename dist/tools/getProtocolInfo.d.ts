@@ -19,5 +19,7 @@ export declare function getProtocolInfo(): {
     documentation: string;
     dapp: string;
     explorer: string;
+    agentsGuide: string;
+    agentsGuideNote: string;
 };
 //# sourceMappingURL=getProtocolInfo.d.ts.map

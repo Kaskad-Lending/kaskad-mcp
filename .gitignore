@@ -2,3 +2,8 @@ node_modules/
 dist/
 *.js.map
 stderr.txt
+credentials/
+*.env
+.env*
+
+dist/

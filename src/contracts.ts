@@ -10,7 +10,21 @@ export const CONTRACTS = {
   uiPoolDataProvider:    "0xbe38809914b552f295cD3e8dF2e77b3DA69cBC8b",
   rewardsController:     "0x0eB9dc7DD4eDc2226a20093Ca0515D84b7529468",
   activityTracker:       "0xa11FbfB7E69c3D8443335d30c5E6271bEE78b128",
+  // Kaskad staking vault — stake/unstake KSKD, grants governance eligibility
+  stKSKDVault:           "0xbA98cd5cC5E99058834072B3428de126b433d594",
 } as const;
+
+// Dead pool underlying addresses (old testnet deploys — still on-chain but 0% APY, no UI support)
+// Funds in these pools are stranded in deprecated token contracts and cannot be migrated via dApp.
+export const DEAD_POOL_ADDRESSES = new Set([
+  "0x700b6a60ce7eaaea56f065753d8dcb9653dbad35", // USDC v1
+  "0xa15bb66138824a1c7167f5e85b957d04dd34e468", // WBTC v1
+  "0xb19b36b1456e65e3a6d514d3f715f204bd59f431", // WETH v1
+  "0x8ce361602b935680e8dec218b820ff5056beb7af", // WIKAS v1
+  "0x328731d9731b1822fdb4d45d28a554fc471bece1", // IGRA v1
+  "0xd8fc8640ebc5e84519c52f61fff531d92764e780", // KSKD v1
+  "0x9c68fb08f127a263eb685ee25a68bed704d6b2de", // KSKD v2
+]);
 
 // Token addresses — current deploy (updated from bundle index-DSNj_0fi.js, Mar 23 2026)
 export const TOKENS: Record<string, string> = {

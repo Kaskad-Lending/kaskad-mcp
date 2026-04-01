@@ -1,9 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ERC20_ABI = exports.ORACLE_ABI = exports.POOL_ABI = exports.TOKEN_SYMBOLS = exports.TOKENS = exports.CONTRACTS = exports.RPC_URL = exports.CHAIN_ID = void 0;
+exports.ERC20_ABI = exports.ORACLE_ABI = exports.POOL_ABI = exports.ACTIVE_ASSETS = exports.TOKEN_SYMBOLS = exports.TOKENS = exports.DEAD_POOL_ADDRESSES = exports.CONTRACTS = exports.SUBGRAPH_URL = exports.RPC_URL = exports.CHAIN_ID = void 0;
 // Contract addresses — Igra Galleon Testnet (chain ID 38836)
 exports.CHAIN_ID = 38836;
 exports.RPC_URL = "https://galleon-testnet.igralabs.com:8545";
+exports.SUBGRAPH_URL = "https://testnet.kaskad.live/subgraphs/name/galleon-testnet-aave-v3";
 exports.CONTRACTS = {
     priceOracle: "0xc1198A9d400306a0406fD3E3Ad67140b3D059f48",
     poolProxy: "0xA1D84fc43f7F2D803a2d64dbBa4A90A9A79E3F24",
@@ -11,7 +12,20 @@ exports.CONTRACTS = {
     uiPoolDataProvider: "0xbe38809914b552f295cD3e8dF2e77b3DA69cBC8b",
     rewardsController: "0x0eB9dc7DD4eDc2226a20093Ca0515D84b7529468",
     activityTracker: "0xa11FbfB7E69c3D8443335d30c5E6271bEE78b128",
+    // Kaskad staking vault — stake/unstake KSKD, grants governance eligibility
+    stKSKDVault: "0xbA98cd5cC5E99058834072B3428de126b433d594",
 };
+// Dead pool underlying addresses (old testnet deploys — still on-chain but 0% APY, no UI support)
+// Funds in these pools are stranded in deprecated token contracts and cannot be migrated via dApp.
+exports.DEAD_POOL_ADDRESSES = new Set([
+    "0x700b6a60ce7eaaea56f065753d8dcb9653dbad35", // USDC v1
+    "0xa15bb66138824a1c7167f5e85b957d04dd34e468", // WBTC v1
+    "0xb19b36b1456e65e3a6d514d3f715f204bd59f431", // WETH v1
+    "0x8ce361602b935680e8dec218b820ff5056beb7af", // WIKAS v1
+    "0x328731d9731b1822fdb4d45d28a554fc471bece1", // IGRA v1
+    "0xd8fc8640ebc5e84519c52f61fff531d92764e780", // KSKD v1
+    "0x9c68fb08f127a263eb685ee25a68bed704d6b2de", // KSKD v2
+]);
 // Token addresses — current deploy (updated from bundle index-DSNj_0fi.js, Mar 23 2026)
 exports.TOKENS = {
     KSKD: "0x2d17780a59044D49FeEf0AA9cEaB1B6e3161aFf7",
@@ -23,6 +37,8 @@ exports.TOKENS = {
 };
 // Reverse mapping: address → symbol
 exports.TOKEN_SYMBOLS = Object.fromEntries(Object.entries(exports.TOKENS).map(([sym, addr]) => [addr.toLowerCase(), sym]));
+// Active assets map — used for subgraph filtering
+exports.ACTIVE_ASSETS = exports.TOKENS;
 // Aave v3 Pool — minimal ABI fragments used for encoding/decoding
 exports.POOL_ABI = [
     // getReservesList() → address[]

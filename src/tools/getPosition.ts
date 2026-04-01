@@ -1,4 +1,4 @@
-import { CONTRACTS, POOL_ABI, ORACLE_ABI, TOKEN_SYMBOLS, ERC20_ABI } from "../contracts.js";
+import { CONTRACTS, POOL_ABI, ORACLE_ABI, TOKEN_SYMBOLS, ERC20_ABI, DEAD_POOL_ADDRESSES } from "../contracts.js";
 import { callFunction, safeCall } from "../rpc.js";
 import { isAddress } from "ethers";
 
@@ -84,6 +84,8 @@ export async function getPosition(
 
     for (let i = 0; i < addresses.length; i++) {
       const addr = addresses[i];
+      // Skip dead pools (deprecated testnet deploys — stranded funds, no dApp support)
+      if (DEAD_POOL_ADDRESSES.has(addr.toLowerCase())) continue;
       const price = priceList[i] ?? 0n;
       const decimals = 18; // assume 18; accurate enough for testnet
 
@@ -153,15 +155,32 @@ export async function getPosition(
       });
     }
 
+    // 5. Read stKSKD vault position
+    let stakedKSKD = 0;
+    try {
+      const [stShares] = await callFunction(
+        ["function balanceOf(address) view returns (uint256)"],
+        CONTRACTS.stKSKDVault,
+        "balanceOf",
+        [userAddress]
+      );
+      stakedKSKD = Math.round(Number((stShares as bigint) * 1_000_000n / WAD)) / 1_000_000;
+    } catch { /* ignore */ }
+
     return {
       address: userAddress,
       totalCollateralUSD: Math.round(baseToUSD(totalCollateralBase) * 100) / 100,
       totalDebtUSD: Math.round(baseToUSD(totalDebtBase) * 100) / 100,
       availableBorrowsUSD: Math.round(baseToUSD(availableBorrowsBase) * 100) / 100,
       healthFactor: wadToHF(healthFactor),
-      ltv: Number(ltv) / 100, // basis points → percent
+      ltv: Number(ltv) / 100,
       liquidationThreshold: Number(currentLiquidationThreshold) / 100,
       positions,
+      staking: {
+        stKSKDVault: CONTRACTS.stKSKDVault,
+        stakedKSKD,
+        note: "stKSKD grants governance eligibility (isEligibleBorrower/isEligibleSupplier). Use stake()/unstake() to manage.",
+      },
     };
   });
 }

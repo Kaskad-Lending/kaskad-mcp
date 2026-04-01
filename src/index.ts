@@ -10,10 +10,68 @@ import { getMarkets } from "./tools/getMarkets.js";
 import { getPosition } from "./tools/getPosition.js";
 import { getProtocolInfo } from "./tools/getProtocolInfo.js";
 import { getHistory } from "./tools/getHistory.js";
+import { getGovernanceParams } from "./tools/getGovernanceParams.js";
+import { supplyAsset, borrowAsset, repayAsset, withdrawAsset, supplyNativeIKAS, withdrawNativeIKAS } from "./tools/executeTransaction.js";
 
 // ─── Tool definitions ──────────────────────────────────────────────────────────
 
 const TOOLS: Tool[] = [
+  {
+    name: "supply",
+    description:
+      "Supply (deposit) an asset into the Kaskad Protocol lending pool. Earns supply APY. " +
+      "Trust boundary: max 10% of wallet balance per asset per action. Testnet only.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        asset: { type: "string", description: "Asset symbol: IGRA, USDC, WETH, WBTC, IKAS, WIKAS, KSKD" },
+        amount: { type: "number", description: "Amount to supply (in token units, not wei)" },
+      },
+      required: ["asset", "amount"],
+    },
+  },
+  {
+    name: "borrow",
+    description:
+      "Borrow an asset from the Kaskad Protocol lending pool. Requires sufficient collateral. " +
+      "Uses variable rate by default. Trust boundary: max 10% of available borrows per action. Testnet only.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        asset: { type: "string", description: "Asset symbol: IGRA, USDC, WETH, WBTC, IKAS, WIKAS, KSKD" },
+        amount: { type: "number", description: "Amount to borrow (in token units, not wei)" },
+        interestRateMode: { type: "number", description: "1 = stable, 2 = variable (default)" },
+      },
+      required: ["asset", "amount"],
+    },
+  },
+  {
+    name: "repay",
+    description:
+      "Repay a borrowed asset on Kaskad Protocol. Pass amount=-1 to repay full debt. Testnet only.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        asset: { type: "string", description: "Asset symbol" },
+        amount: { type: "number", description: "Amount to repay. Use -1 to repay full debt." },
+        interestRateMode: { type: "number", description: "1 = stable, 2 = variable (default)" },
+      },
+      required: ["asset", "amount"],
+    },
+  },
+  {
+    name: "withdraw",
+    description:
+      "Withdraw a supplied asset from the Kaskad Protocol lending pool. Pass amount=-1 to withdraw all. Testnet only.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        asset: { type: "string", description: "Asset symbol" },
+        amount: { type: "number", description: "Amount to withdraw. Use -1 to withdraw all." },
+      },
+      required: ["asset", "amount"],
+    },
+  },
   {
     name: "getMarkets",
     description:
@@ -42,9 +100,23 @@ const TOOLS: Tool[] = [
     },
   },
   {
+    name: "getGovernanceParams",
+    description:
+      "Returns live DAO-voted governance parameters from KaskadGovernor (last finalized epoch). " +
+      "Includes: EMISSION_SUPPLIERS_SHARE_BPS (supplier vs borrower KSKD split), eligibility thresholds, " +
+      "treasury allocation ratios, and undistributed emission recycling rate. " +
+      "ALWAYS call this before strategizing positions — these params directly affect KSKD emission yield.",
+    inputSchema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
     name: "getProtocolInfo",
     description:
-      "Returns static metadata about Kaskad Protocol: network info, contract addresses, supported assets, and documentation links.",
+      "Returns static metadata about Kaskad Protocol: network info, contract addresses, supported assets, documentation links, " +
+      "and the full AGENTS.md integration guide (includes emission schedule, eligibility rules, gas requirements, and strategy context).",
     inputSchema: {
       type: "object",
       properties: {},
@@ -76,10 +148,13 @@ const TOOLS: Tool[] = [
 
 // ─── Server setup ──────────────────────────────────────────────────────────────
 
+const SERVER_NAME = "kaskad-mcp";
+const SERVER_VERSION = "1.0.0";
+
 const server = new Server(
   {
-    name: "kaskad-mcp",
-    version: "1.0.0",
+    name: SERVER_NAME,
+    version: SERVER_VERSION,
   },
   {
     capabilities: {
@@ -122,6 +197,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         break;
       }
 
+      case "getGovernanceParams": {
+        result = await getGovernanceParams();
+        break;
+      }
+
       case "getProtocolInfo": {
         result = getProtocolInfo();
         break;
@@ -130,6 +210,39 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case "getHistory": {
         const { address, limit } = (args ?? {}) as { address?: string; limit?: number };
         result = await getHistory({ address, limit });
+        break;
+      }
+
+      case "supply": {
+        const { asset, amount } = (args ?? {}) as { asset: string; amount: number };
+        // Route native iKAS through WrappedTokenGateway, ERC20s through standard pool
+        if (asset.toUpperCase() === "IKAS") {
+          result = await supplyNativeIKAS({ amount });
+        } else {
+          result = await supplyAsset({ asset, amount });
+        }
+        break;
+      }
+
+      case "borrow": {
+        const { asset, amount, interestRateMode } = (args ?? {}) as { asset: string; amount: number; interestRateMode?: number };
+        result = await borrowAsset({ asset, amount, interestRateMode });
+        break;
+      }
+
+      case "repay": {
+        const { asset, amount, interestRateMode } = (args ?? {}) as { asset: string; amount: number; interestRateMode?: number };
+        result = await repayAsset({ asset, amount, interestRateMode });
+        break;
+      }
+
+      case "withdraw": {
+        const { asset, amount } = (args ?? {}) as { asset: string; amount: number };
+        if (asset.toUpperCase() === "IKAS") {
+          result = await withdrawNativeIKAS({ amount });
+        } else {
+          result = await withdrawAsset({ asset, amount });
+        }
         break;
       }
 
@@ -167,16 +280,93 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 });
 
+// ─── Health endpoint (HTTP server) ────────────────────────────────────────────
+
+import http from "http";
+
+const HEALTH_PORT = process.env.MCP_HEALTH_PORT ? parseInt(process.env.MCP_HEALTH_PORT, 10) : 3001;
+
+const healthServer = http.createServer(async (req, res) => {
+  // CORS headers
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
+  const url = new URL(req.url || "", `http://localhost:${HEALTH_PORT}`);
+
+  // GET /health — returns server status
+  if (url.pathname === "/health" && req.method === "GET") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({
+      status: "ok",
+      server: SERVER_NAME,
+      version: SERVER_VERSION,
+      timestamp: new Date().toISOString(),
+      transport: "stdio",
+      capabilities: {
+        tools: TOOLS.map(t => t.name),
+      },
+    }));
+    return;
+  }
+
+  // GET /mcp/health — alias for /health (Claude Code compatible)
+  if (url.pathname === "/mcp/health" && req.method === "GET") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({
+      status: "ok",
+      server: SERVER_NAME,
+      version: SERVER_VERSION,
+      timestamp: new Date().toISOString(),
+      transport: "stdio",
+      capabilities: {
+        tools: TOOLS.map(t => t.name),
+      },
+    }));
+    return;
+  }
+
+  // GET / — root info
+  if (url.pathname === "/" && req.method === "GET") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({
+      name: SERVER_NAME,
+      version: SERVER_VERSION,
+      description: "MCP server for Kaskad Protocol — reads live on-chain state from Igra Galleon",
+      endpoints: {
+        health: "/health or /mcp/health",
+        mcp: "stdio (primary)",
+      },
+    }));
+    return;
+  }
+
+  // 404
+  res.writeHead(404, { "Content-Type": "application/json" });
+  res.end(JSON.stringify({ error: "Not found" }));
+});
+
 // ─── Start ─────────────────────────────────────────────────────────────────────
 
 async function main() {
+  // Start health HTTP server (non-blocking)
+  healthServer.listen(HEALTH_PORT, () => {
+    process.stderr.write(`[${SERVER_NAME}] Health endpoint running on http://localhost:${HEALTH_PORT}/health\n`);
+  });
+
+  // Start MCP stdio server
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  // MCP servers communicate via stdio — no console output expected
-  process.stderr.write("[kaskad-mcp] Server started on stdio\n");
+  process.stderr.write(`[${SERVER_NAME}] MCP server started on stdio\n`);
 }
 
 main().catch((err) => {
-  process.stderr.write(`[kaskad-mcp] Fatal error: ${err}\n`);
+  process.stderr.write(`[${SERVER_NAME}] Fatal error: ${err}\n`);
   process.exit(1);
 });

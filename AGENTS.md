@@ -88,7 +88,7 @@ cast send 0xA1D84fc43f7F2D803a2d64dbBa4A90A9A79E3F24 \
  --rpc-url https://galleon-testnet.igralabs.com:8545 \
  --private-key $PRIVATE_KEY \
  --legacy --gas-price 2000gwei \
- --gas-limit 500000
+ --gas-limit 1700000
 ```
 
 ### 3.3. Borrowing Assets
@@ -98,7 +98,7 @@ cast send 0xA1D84fc43f7F2D803a2d64dbBa4A90A9A79E3F24 \
  --rpc-url https://galleon-testnet.igralabs.com:8545 \
  --private-key $PRIVATE_KEY \
  --legacy --gas-price 2000gwei \
- --gas-limit 500000
+ --gas-limit 1700000
 ```
 
 ### 3.4. Repaying Debt
@@ -108,7 +108,7 @@ cast send 0xA1D84fc43f7F2D803a2d64dbBa4A90A9A79E3F24 \
  --rpc-url https://galleon-testnet.igralabs.com:8545 \
  --private-key $PRIVATE_KEY \
  --legacy --gas-price 2000gwei \
- --gas-limit 500000
+ --gas-limit 1700000
 ```
 
 ---
@@ -268,7 +268,7 @@ const tx = await pool.supply(
     maxPriorityFeePerGas: 2_000_000_000_000n, // 2000 Gwei Minimum!
     maxFeePerGas: 2_001_000_000_000n,
     type: 2,
-    gasLimit: 500_000n,
+    gasLimit: 1_700_000n, // 500K is insufficient — Galleon requires ~1.7M for pool ops
   }
 );
 await tx.wait();

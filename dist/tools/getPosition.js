@@ -37,6 +37,9 @@ async function getPosition(userAddress) {
         const positions = [];
         for (let i = 0; i < addresses.length; i++) {
             const addr = addresses[i];
+            // Skip dead pools (deprecated testnet deploys — stranded funds, no dApp support)
+            if (contracts_js_1.DEAD_POOL_ADDRESSES.has(addr.toLowerCase()))
+                continue;
             const price = priceList[i] ?? 0n;
             const decimals = 18; // assume 18; accurate enough for testnet
             let reserveResult;
@@ -86,15 +89,27 @@ async function getPosition(userAddress) {
                 borrowed: Math.round(borrowedUSD * 100) / 100,
             });
         }
+        // 5. Read stKSKD vault position
+        let stakedKSKD = 0;
+        try {
+            const [stShares] = await (0, rpc_js_1.callFunction)(["function balanceOf(address) view returns (uint256)"], contracts_js_1.CONTRACTS.stKSKDVault, "balanceOf", [userAddress]);
+            stakedKSKD = Math.round(Number(stShares * 1000000n / WAD)) / 1_000_000;
+        }
+        catch { /* ignore */ }
         return {
             address: userAddress,
             totalCollateralUSD: Math.round(baseToUSD(totalCollateralBase) * 100) / 100,
             totalDebtUSD: Math.round(baseToUSD(totalDebtBase) * 100) / 100,
             availableBorrowsUSD: Math.round(baseToUSD(availableBorrowsBase) * 100) / 100,
             healthFactor: wadToHF(healthFactor),
-            ltv: Number(ltv) / 100, // basis points → percent
+            ltv: Number(ltv) / 100,
             liquidationThreshold: Number(currentLiquidationThreshold) / 100,
             positions,
+            staking: {
+                stKSKDVault: contracts_js_1.CONTRACTS.stKSKDVault,
+                stakedKSKD,
+                note: "stKSKD grants governance eligibility (isEligibleBorrower/isEligibleSupplier). Use stake()/unstake() to manage.",
+            },
         };
     });
 }
