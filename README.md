@@ -26,18 +26,26 @@ npm run build
 
 ## Wallet Setup
 
+> ⚠️ **Security — read before proceeding**
+> 
+> The MCP server requires a private key to sign transactions. **Always use a dedicated testnet wallet with no real funds.** Never use a wallet that holds mainnet assets, is linked to a hardware wallet, or is used for any other purpose.
+>
+> Private keys stored in environment variables or local files are only as secure as the machine running the server. If you are running this on a shared or remote machine, treat the key as potentially exposed.
+>
+> **Never commit your private key to git.** The `credentials/` directory is gitignored, but double-check before any commit.
+
 The server needs a wallet private key to sign transactions. Three options (in priority order):
 
-**Option 1 — Environment variable (recommended for CI/server)**
+**Option 1 — Environment variable (recommended)**
 ```bash
-export MCP_WALLET_KEY=0xYOUR_PRIVATE_KEY
+export MCP_WALLET_KEY=0xYOUR_TESTNET_PRIVATE_KEY
 node dist/index.js
 ```
 
 **Option 2 — Local credentials file**
 ```bash
 mkdir credentials
-echo '{"privateKey":"0xYOUR_PRIVATE_KEY"}' > credentials/wallet.json
+echo '{"privateKey":"0xYOUR_TESTNET_PRIVATE_KEY"}' > credentials/wallet.json
 # credentials/ is gitignored — never commit this
 node dist/index.js
 ```
@@ -45,7 +53,7 @@ node dist/index.js
 **Option 3 — Home directory**
 ```bash
 mkdir ~/.kaskad-mcp
-echo '{"privateKey":"0xYOUR_PRIVATE_KEY"}' > ~/.kaskad-mcp/wallet.json
+echo '{"privateKey":"0xYOUR_TESTNET_PRIVATE_KEY"}' > ~/.kaskad-mcp/wallet.json
 node dist/index.js
 ```
 
