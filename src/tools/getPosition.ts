@@ -1,4 +1,5 @@
 import { CONTRACTS, POOL_ABI, ORACLE_ABI, TOKEN_SYMBOLS, ERC20_ABI, DEAD_POOL_ADDRESSES } from "../contracts.js";
+import { getMarkets } from "./getMarkets.js";
 import { callFunction, safeCall } from "../rpc.js";
 import { isAddress } from "ethers";
 
@@ -10,6 +11,8 @@ interface PositionEntry {
   address: string;
   supplied: number;
   borrowed: number;
+  suppliedUSD: number;
+  borrowedUSD: number;
 }
 
 interface PositionResult {
@@ -20,6 +23,7 @@ interface PositionResult {
   healthFactor: number | string;
   ltv: number;
   liquidationThreshold: number;
+  netPositionAPY: number;
   positions: PositionEntry[];
 }
 
@@ -158,6 +162,8 @@ export async function getPosition(
         address: addr,
         supplied: Math.round(suppliedUSD * 100) / 100,
         borrowed: Math.round(borrowedUSD * 100) / 100,
+        suppliedUSD: Math.round(suppliedUSD * 100) / 100,
+        borrowedUSD: Math.round(borrowedUSD * 100) / 100,
       });
     }
 
@@ -173,6 +179,32 @@ export async function getPosition(
       stakedKSKD = Math.round(Number((stShares as bigint) * 1_000_000n / WAD)) / 1_000_000;
     } catch { /* ignore */ }
 
+    // Compute net position APY: (sum of supply yield - sum of borrow cost) / total collateral
+    let netPositionAPY = 0;
+    try {
+      const marketsData = await getMarkets();
+      if ("error" in marketsData) throw new Error("markets unavailable");
+      const marketMap: Record<string, { supplyAPY: number; borrowAPY: number }> = {};
+      marketsData.markets.forEach((mk: { asset: string; supplyAPY: number; borrowAPY: number }) => {
+        marketMap[mk.asset.toUpperCase()] = mk;
+      });
+
+      let totalSupplyYieldUSD = 0;
+      let totalBorrowCostUSD = 0;
+      const totalCollateralUSD = baseToUSD(totalCollateralBase);
+
+      for (const pos of positions) {
+        const mk = marketMap[pos.asset?.toUpperCase()];
+        if (!mk) continue;
+        totalSupplyYieldUSD += pos.suppliedUSD * (mk.supplyAPY / 100);
+        totalBorrowCostUSD += pos.borrowedUSD * (mk.borrowAPY / 100);
+      }
+
+      if (totalCollateralUSD > 0) {
+        netPositionAPY = Math.round(((totalSupplyYieldUSD - totalBorrowCostUSD) / totalCollateralUSD) * 10000) / 100;
+      }
+    } catch { /* ignore — net APY is best-effort */ }
+
     return {
       address: userAddress,
       totalCollateralUSD: Math.round(baseToUSD(totalCollateralBase) * 100) / 100,
@@ -181,6 +213,7 @@ export async function getPosition(
       healthFactor: wadToHF(healthFactor),
       ltv: Number(ltv) / 100,
       liquidationThreshold: Number(currentLiquidationThreshold) / 100,
+      netPositionAPY,
       positions,
       staking: {
         stKSKDVault: CONTRACTS.stKSKDVault,
