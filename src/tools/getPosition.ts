@@ -1,5 +1,6 @@
 import { CONTRACTS, TOKEN_SYMBOLS, DEAD_POOL_ADDRESSES } from "../contracts.js";
 import { getMarkets } from "./getMarkets.js";
+import { getUserRewards } from "./getTokenomics.js";
 import { safeCall } from "../rpc.js";
 import { isAddress } from "ethers";
 import { PoolContract, OracleContract, ERC20Contract } from "../typed-contracts.js";
@@ -26,6 +27,9 @@ interface PositionResult {
   liquidationThreshold: number;
   avgSupplyAPY: number;
   netPositionAPY: number;
+  netPositionAPYWithEmissions: number;
+  pendingKSKDRewards: number;
+  kskdPriceUSD: number;
   positions: PositionEntry[];
 }
 
@@ -154,6 +158,31 @@ export async function getPosition(
       }
     } catch { /* net APY is best-effort */ }
 
+    // Emission APY: annualize pending KSKD rewards using live oracle price
+    let pendingKSKDRewards = 0;
+    let kskdPriceUSD = 0;
+    let netPositionAPYWithEmissions = netPositionAPY;
+    try {
+      const oracle = new OracleContract(CONTRACTS.priceOracle);
+      const KSKD_ADDRESS = "0x2d17780a59044D49FeEf0AA9cEaB1B6e3161aFf7";
+      const kskdPriceRaw = await oracle.getAssetPrice(KSKD_ADDRESS);
+      kskdPriceUSD = Math.round(Number(kskdPriceRaw * 1_000_000n / 10n ** 8n)) / 1_000_000;
+
+      const rewardsData = await getUserRewards({ address: userAddress });
+      if (!("error" in rewardsData)) {
+        pendingKSKDRewards = rewardsData.accruedKSKD ?? 0;
+        // Annualize: assume rewards accrue over current epoch (~30 days)
+        // annualizedEmissionUSD = pendingKSKD * kskdPrice * (365/30)
+        const epochDays = 30;
+        const annualizedEmissionUSD = pendingKSKDRewards * kskdPriceUSD * (365 / epochDays);
+        const totalCollateralUSD = baseToUSD(accountData.totalCollateralBase);
+        if (totalCollateralUSD > 0 && annualizedEmissionUSD > 0) {
+          const emissionAPY = Math.round((annualizedEmissionUSD / totalCollateralUSD) * 10000) / 100;
+          netPositionAPYWithEmissions = Math.round((netPositionAPY + emissionAPY) * 100) / 100;
+        }
+      }
+    } catch { /* emission APY is best-effort */ }
+
     return {
       address: userAddress,
       totalCollateralUSD: Math.round(baseToUSD(accountData.totalCollateralBase) * 100) / 100,
@@ -164,6 +193,9 @@ export async function getPosition(
       liquidationThreshold: Number(accountData.currentLiquidationThreshold) / 100,
       avgSupplyAPY,
       netPositionAPY,
+      netPositionAPYWithEmissions,
+      pendingKSKDRewards,
+      kskdPriceUSD,
       positions,
       staking: {
         stKSKDVault: CONTRACTS.stKSKDVault,
