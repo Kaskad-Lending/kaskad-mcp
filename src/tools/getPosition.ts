@@ -30,6 +30,16 @@ interface PositionResult {
   netPositionAPYWithEmissions: number;
   pendingKSKDRewards: number;
   kskdPriceUSD: number;
+  eligibility: {
+    isSupplierEligible: boolean;
+    isBorrowerEligible: boolean;
+    supplierEligibleSince: string | null;
+    borrowerEligibleSince: string | null;
+    supplierUptimeThresholdPct: string;
+    borrowerUptimeThresholdPct: string;
+    currentEpoch: number;
+    note: string;
+  };
   positions: PositionEntry[];
 }
 
@@ -183,6 +193,61 @@ export async function getPosition(
       }
     } catch { /* emission APY is best-effort */ }
 
+    // Eligibility: read live supplier/borrower KSKD emission eligibility from KaskadStrategy
+    let eligibility: {
+      isSupplierEligible: boolean;
+      isBorrowerEligible: boolean;
+      supplierEligibleSince: string | null;
+      borrowerEligibleSince: string | null;
+      supplierUptimeThresholdPct: string;
+      borrowerUptimeThresholdPct: string;
+      currentEpoch: number;
+      note: string;
+    } = {
+      isSupplierEligible: false,
+      isBorrowerEligible: false,
+      supplierEligibleSince: null,
+      borrowerEligibleSince: null,
+      supplierUptimeThresholdPct: "n/a",
+      borrowerUptimeThresholdPct: "n/a",
+      currentEpoch: 0,
+      note: "Eligibility unavailable",
+    };
+    try {
+      const { ethers } = await import("ethers");
+      const provider = new ethers.JsonRpcProvider(process.env.RPC_URL ?? "https://galleon-testnet.igralabs.com:8545");
+      const strategy = new ethers.Contract(
+        CONTRACTS.kaskadStrategy,
+        [
+          "function isEligibleSupplier(address,uint256) view returns (bool)",
+          "function isEligibleBorrower(address,uint256) view returns (bool)",
+          "function userEpochState(address) view returns (uint256,uint256,uint256,uint64,uint64,uint64,bool,bool)",
+          "function supplierUptimeThresholdBps() view returns (uint16)",
+          "function borrowerUptimeThresholdBps() view returns (uint16)",
+        ],
+        provider
+      );
+      const state = await strategy.userEpochState(userAddress);
+      const currentEpoch = Number(state[0]);
+      const supplierSince = Number(state[3]);
+      const borrowerSince = Number(state[4]);
+      const isSupplierEligible = Boolean(state[6]);
+      const isBorrowerEligible = Boolean(state[7]);
+      const supThresh = await strategy.supplierUptimeThresholdBps();
+      const borThresh = await strategy.borrowerUptimeThresholdBps();
+
+      eligibility = {
+        isSupplierEligible,
+        isBorrowerEligible,
+        supplierEligibleSince: supplierSince > 0 ? new Date(supplierSince * 1000).toISOString() : null,
+        borrowerEligibleSince: borrowerSince > 0 ? new Date(borrowerSince * 1000).toISOString() : null,
+        supplierUptimeThresholdPct: `${(Number(supThresh) / 100).toFixed(1)}%`,
+        borrowerUptimeThresholdPct: `${(Number(borThresh) / 100).toFixed(1)}%`,
+        currentEpoch,
+        note: `Epoch ${currentEpoch}: supplier ${isSupplierEligible ? "✓ eligible" : "✗ not eligible"} | borrower ${isBorrowerEligible ? "✓ eligible" : "✗ not eligible"}. Eligibility gates KSKD emission rewards each epoch.`,
+      };
+    } catch { /* eligibility is best-effort */ }
+
     return {
       address: userAddress,
       totalCollateralUSD: Math.round(baseToUSD(accountData.totalCollateralBase) * 100) / 100,
@@ -196,6 +261,7 @@ export async function getPosition(
       netPositionAPYWithEmissions,
       pendingKSKDRewards,
       kskdPriceUSD,
+      eligibility,
       positions,
       staking: {
         stKSKDVault: CONTRACTS.stKSKDVault,

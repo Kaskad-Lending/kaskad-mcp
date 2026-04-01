@@ -10,6 +10,7 @@ export const CONTRACTS = {
   uiPoolDataProvider:    "0xbe38809914b552f295cD3e8dF2e77b3DA69cBC8b",
   rewardsController:     "0x0eB9dc7DD4eDc2226a20093Ca0515D84b7529468",
   activityTracker:       "0xa11FbfB7E69c3D8443335d30c5E6271bEE78b128",
+  kaskadStrategy:        "0x895016f79282D9A5C8faEA7FcB935310042fF836",
   // Kaskad staking vault — stake/unstake KSKD, grants governance eligibility
   stKSKDVault:           "0xbA98cd5cC5E99058834072B3428de126b433d594",
   // Tokenomics — emission system
