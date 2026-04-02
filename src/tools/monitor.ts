@@ -18,7 +18,7 @@ import { getPosition } from "./getPosition.js";
 import { getMarkets } from "./getMarkets.js";
 import { getGovernanceParams } from "./getGovernanceParams.js";
 
-const WALLET = process.env.WALLET_ADDRESS ?? "";
+const WALLET = process.env.WALLET_ADDRESS ?? "0xFcBD0dA4428c7697EA06b705Cea9F6A8858d6094";
 const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK_MCP_LIVE ?? "";
 const HF_TARGET = 1.8;
 const HF_FLOOR = 1.5;
