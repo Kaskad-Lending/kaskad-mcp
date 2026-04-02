@@ -56,11 +56,18 @@ export async function getGovernanceParams() {
     }
   }
 
+  // Detect if all values are -1 (0 from contract) — means vote concluded but executeProposal() not yet called
+  const allUnset = Object.values(params).every(p => p.value === -1 || p.value === 0);
+  const govNote = allUnset
+    ? `Epoch ${queryEpoch} vote concluded but executeProposal() not yet called — params pending on-chain execution. Bounds are set; voted values will appear after execution.`
+    : "Live DAO-voted parameters. EMISSION_SUPPLIERS_SHARE_BPS = supplier share of KSKD emissions (borrowers get remainder). All values are on-chain and reflect last finalized epoch vote.";
+
   return {
     governor: GOVERNOR,
     currentEpoch,
     paramsFromEpoch: queryEpoch,
-    note: "Live DAO-voted parameters. EMISSION_SUPPLIERS_SHARE_BPS = supplier share of KSKD emissions (borrowers get remainder). All values are on-chain and reflect last finalized epoch vote.",
+    note: govNote,
+    pendingExecution: allUnset,
     params,
   };
 }
