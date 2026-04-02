@@ -1,0 +1,11 @@
+# robots.txt for testnet.kaskad.live
+# Kaskad Protocol - Igra Galleon Testnet dApp
+# Last updated: 2026-04-02
+
+User-agent: *
+Allow: /
+
+# MCP server and agent discoverability
+# llms.txt: https://testnet.kaskad.live/llms.txt
+# kaskad.json: https://testnet.kaskad.live/kaskad.json
+# MCP server: https://github.com/Kaskad-Lending/kaskad-mcp

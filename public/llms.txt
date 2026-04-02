@@ -1,0 +1,54 @@
+# Kaskad Protocol - Testnet
+
+> Kaskad is a decentralized lending and borrowing protocol built on Kaspa's Igra Galleon L2. This is the testnet environment running on Igra Galleon. Powered by an Aave v3.3 fork with custom incentives, governance, and oracle logic.
+
+## Testnet dApp
+
+- [Testnet dApp](https://testnet.kaskad.live): Live testnet interface for supply, borrow, repay, and withdraw operations on Igra Galleon.
+
+## MCP Server (Agent Interface)
+
+Kaskad exposes a Model Context Protocol (MCP) server for AI agent integration. Agents can read protocol state, execute transactions, and manage staking positions autonomously.
+
+- [MCP Repository](https://github.com/Kaskad-Lending/kaskad-mcp): Source code, tool definitions, and AGENTS.md with full tokenomics context.
+- [Protocol Manifest](https://testnet.kaskad.live/kaskad.json): Machine-readable protocol manifest with contract addresses, supported assets, RPC endpoints, and MCP tool list.
+
+## MCP Tools (14 available)
+
+### Read
+- getMarkets: All active lending markets with live APYs, utilization, and liquidity
+- getPosition: Full user position (supplied, borrowed, health factor, eligibility, staking)
+- getProtocolInfo: Protocol metadata, contract addresses, network config
+- getGovernanceParams: Live governance parameters and their on-chain bounds
+- getHistory: Historical liquidations, APY snapshots, user transaction history
+- getTokenomics: Emission schedule, epoch state, KSKD oracle price, reward projections
+- getStakingInfo: stKSKD balance, holding duration, governance eligibility
+
+### Write
+- supply: Deposit an asset into the lending pool (earns supply APY)
+- borrow: Borrow against supplied collateral (variable rate)
+- repay: Repay borrowed debt (pass -1 to repay full balance)
+- withdraw: Withdraw supplied assets (pass -1 to withdraw all)
+- stakeKSKD: Stake KSKD tokens to receive stKSKD (governance eligibility)
+- unstakeKSKD: Redeem stKSKD back to KSKD
+
+## Network
+
+- Chain: Igra Galleon Testnet (EVM-compatible L2 on Kaspa)
+- RPC: https://galleon-testnet.igralabs.com:8545
+- Chain ID: 6661
+- Native token: iKAS
+
+## Supported Assets
+
+USDC, WETH, USDT, WBTC, stETH, iKAS, WiKAS, KSKD, IGRA
+
+## Key Contracts
+
+See kaskad.json at testnet.kaskad.live/kaskad.json for full contract addresses.
+
+## Links
+
+- [Marketing site](https://kaskad.app)
+- [Whitepaper](https://github.com/Kaskad-Lending/kaskad-public-docs/blob/main/Kaskad%20-%20Whitepaper%20V1.pdf)
+- [GitHub org](https://github.com/Kaskad-Lending)
