@@ -13,6 +13,7 @@ import { getHistory } from "./tools/getHistory.js";
 import { getGovernanceParams } from "./tools/getGovernanceParams.js";
 import { supplyAsset, borrowAsset, repayAsset, withdrawAsset, supplyNativeIKAS, withdrawNativeIKAS } from "./tools/executeTransaction.js";
 import { getEmissions, getUserRewards } from "./tools/getTokenomics.js";
+import { stakeKSKD, unstakeKSKD, getStakingInfo } from "./tools/manageStaking.js";
 
 // ─── Tool definitions ──────────────────────────────────────────────────────────
 
@@ -173,6 +174,48 @@ const TOOLS: Tool[] = [
       required: ["address"],
     },
   },
+  {
+    name: "stakeKSKD",
+    description: "Stake KSKD tokens into the stKSKD vault (1:1). Grants governance eligibility (isEligibleSupplier / isEligibleBorrower). Requires MCP_WALLET_KEY.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        amount: {
+          type: "number",
+          description: "Amount of KSKD to stake (human units, e.g. 100 = 100 KSKD)",
+        },
+      },
+      required: ["amount"],
+    },
+  },
+  {
+    name: "unstakeKSKD",
+    description: "Unstake stKSKD shares back to KSKD (1:1). Warning: if balance drops to 0, governance eligibility resets. Requires MCP_WALLET_KEY.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        shares: {
+          type: "number",
+          description: "Number of stKSKD shares to redeem (human units, e.g. 100 = 100 stKSKD)",
+        },
+      },
+      required: ["shares"],
+    },
+  },
+  {
+    name: "getStakingInfo",
+    description: "Get stKSKD vault state for a wallet: stKSKD balance, KSKD wallet balance, holding duration.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        address: {
+          type: "string",
+          description: "Wallet address (0x...) to check staking info for",
+        },
+      },
+      required: ["address"],
+    },
+  },
 ];
 
 // ─── Server setup ──────────────────────────────────────────────────────────────
@@ -260,6 +303,27 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           };
         }
         result = await getUserRewards({ address });
+        break;
+      }
+
+      case "stakeKSKD": {
+        const { amount } = (args ?? {}) as { amount?: number };
+        if (!amount) return { content: [{ type: "text", text: JSON.stringify({ error: "Missing required parameter: amount" }) }] };
+        result = await stakeKSKD({ amount });
+        break;
+      }
+
+      case "unstakeKSKD": {
+        const { shares } = (args ?? {}) as { shares?: number };
+        if (!shares) return { content: [{ type: "text", text: JSON.stringify({ error: "Missing required parameter: shares" }) }] };
+        result = await unstakeKSKD({ shares });
+        break;
+      }
+
+      case "getStakingInfo": {
+        const { address } = (args ?? {}) as { address?: string };
+        if (!address) return { content: [{ type: "text", text: JSON.stringify({ error: "Missing required parameter: address" }) }] };
+        result = await getStakingInfo({ address });
         break;
       }
 
