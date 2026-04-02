@@ -12,6 +12,7 @@ import PoolABI from "./abi/Pool.json";
 import OracleABI from "./abi/AaveOracle.json";
 import ERC20ABI from "./abi/ERC20.json";
 import GovernorABI from "./abi/KaskadGovernor.json";
+import StrategyABI from "./abi/KaskadStrategy.json";
 import RewardsControllerABI from "./abi/KaskadRewardsController.json";
 import ActivityTrackerABI from "./abi/KaskadActivityTracker.json";
 import EmissionManagerABI from "./abi/EmissionManager.json";
@@ -147,6 +148,46 @@ export class GovernorContract {
   async epochDecision(epoch: bigint | number, decision: number): Promise<number> {
     const [val] = await callFunction(GOVERNOR_ABI, this.address, "epochDecision", [epoch, decision]);
     return Number(val);
+  }
+
+  async epochFinalized(epoch: bigint | number): Promise<boolean> {
+    const [val] = await callFunction(GovernorABI as InterfaceAbi, this.address, "epochFinalized", [epoch]);
+    return Boolean(val);
+  }
+}
+
+// ─── Strategy ────────────────────────────────────────────────────────────────
+
+const STRATEGY_FIELD_MAP: [string, string][] = [
+  ["TVL_MIN_SUPPLY_USD",                "supplierDepositMinUsd"],
+  ["TVL_MIN_SUPPLY_UPTIME_BPS",         "supplierUptimeThresholdBps"],
+  ["BORROWER_MIN_LTV_BPS",              "borrowerLtvThresholdBps"],
+  ["BORROWER_MIN_UPTIME_BPS",           "borrowerUptimeThresholdBps"],
+  ["EMISSION_SUPPLIERS_SHARE_BPS",      "emissionSplitBps"],
+  ["UNDISTRIBUTED_TO_NEXT_EPOCH_BPS",   "undistributedToNextEpochBps"],
+  ["DAO_TVL_INCENTIVES_SHARE_BPS",      "cashflowToVotersBpsGov"],
+  ["DAO_BURN_SHARE_BPS",                "supplyAdjustmentShareBpsGov"],
+  ["DAO_KASPA_CORE_SHARE_BPS",          "coreFundingShareBpsGov"],
+  ["MILESTONE_TVL_VS_VESTED_SHARE_BPS", "milestoneTvlVsVestedBps"],
+];
+
+export class StrategyContract {
+  constructor(private address: string) {}
+
+  async getAppliedParams(): Promise<Record<string, number>> {
+    const result: Record<string, number> = {};
+    for (const [key, fn] of STRATEGY_FIELD_MAP) {
+      try {
+        const [val] = await callFunction(StrategyABI as InterfaceAbi, this.address, fn, []);
+        // supplierDepositMinUsd is stored as value * 1e8 per applyDecision()
+        result[key] = fn === "supplierDepositMinUsd"
+          ? Math.round(Number(val) / 1e8)
+          : Number(val);
+      } catch {
+        result[key] = -1;
+      }
+    }
+    return result;
   }
 }
 

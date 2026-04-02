@@ -3,37 +3,24 @@
     "type": "function",
     "name": "currentEpoch",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view"
   },
   {
     "type": "function",
     "name": "epochDecision",
     "inputs": [
-      {
-        "name": "epoch",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "decision",
-        "type": "uint8",
-        "internalType": "enum DecisionParams.Decision"
-      }
+      { "name": "epoch", "type": "uint256", "internalType": "uint256" },
+      { "name": "decision", "type": "uint8", "internalType": "enum DecisionParams.Decision" }
     ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint16",
-        "internalType": "uint16"
-      }
-    ],
+    "outputs": [{ "name": "", "type": "uint16", "internalType": "uint16" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "epochFinalized",
+    "inputs": [{ "name": "epoch", "type": "uint256", "internalType": "uint256" }],
+    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
     "stateMutability": "view"
   }
 ]

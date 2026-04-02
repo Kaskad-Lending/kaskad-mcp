@@ -1,0 +1,12 @@
+[
+  { "type": "function", "name": "supplierDepositMinUsd", "inputs": [], "outputs": [{ "name": "", "type": "uint256" }], "stateMutability": "view" },
+  { "type": "function", "name": "supplierUptimeThresholdBps", "inputs": [], "outputs": [{ "name": "", "type": "uint16" }], "stateMutability": "view" },
+  { "type": "function", "name": "borrowerLtvThresholdBps", "inputs": [], "outputs": [{ "name": "", "type": "uint16" }], "stateMutability": "view" },
+  { "type": "function", "name": "borrowerUptimeThresholdBps", "inputs": [], "outputs": [{ "name": "", "type": "uint16" }], "stateMutability": "view" },
+  { "type": "function", "name": "emissionSplitBps", "inputs": [], "outputs": [{ "name": "", "type": "uint16" }], "stateMutability": "view" },
+  { "type": "function", "name": "undistributedToNextEpochBps", "inputs": [], "outputs": [{ "name": "", "type": "uint16" }], "stateMutability": "view" },
+  { "type": "function", "name": "cashflowToVotersBpsGov", "inputs": [], "outputs": [{ "name": "", "type": "uint16" }], "stateMutability": "view" },
+  { "type": "function", "name": "supplyAdjustmentShareBpsGov", "inputs": [], "outputs": [{ "name": "", "type": "uint16" }], "stateMutability": "view" },
+  { "type": "function", "name": "coreFundingShareBpsGov", "inputs": [], "outputs": [{ "name": "", "type": "uint16" }], "stateMutability": "view" },
+  { "type": "function", "name": "milestoneTvlVsVestedBps", "inputs": [], "outputs": [{ "name": "", "type": "uint16" }], "stateMutability": "view" }
+]
