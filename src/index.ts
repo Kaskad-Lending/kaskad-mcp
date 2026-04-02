@@ -14,6 +14,7 @@ import { getGovernanceParams } from "./tools/getGovernanceParams.js";
 import { supplyAsset, borrowAsset, repayAsset, withdrawAsset, supplyNativeIKAS, withdrawNativeIKAS } from "./tools/executeTransaction.js";
 import { getEmissions, getUserRewards } from "./tools/getTokenomics.js";
 import { stakeKSKD, unstakeKSKD, getStakingInfo } from "./tools/manageStaking.js";
+import { checkHealthFactor } from "./tools/checkHealthFactor.js";
 
 // ─── Tool definitions ──────────────────────────────────────────────────────────
 
@@ -216,6 +217,27 @@ const TOOLS: Tool[] = [
       required: ["address"],
     },
   },
+  {
+    name: "checkHealthFactor",
+    description:
+      "Check a wallet's health factor against a threshold. Returns alert:true if HF is below threshold. " +
+      "Use in agent monitoring loops: call on a cron interval and trigger repay() or supply() when alert:true. " +
+      "Alert levels: safe | warning (below threshold) | danger (HF < 1.2) | critical (HF < 1.05, liquidation imminent).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        address: {
+          type: "string",
+          description: "Wallet address (0x...) to monitor",
+        },
+        threshold: {
+          type: "number",
+          description: "Health factor threshold to alert below. Default: 1.5. Must be between 1.0 and 10.0.",
+        },
+      },
+      required: ["address"],
+    },
+  },
 ];
 
 // ─── Server setup ──────────────────────────────────────────────────────────────
@@ -324,6 +346,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const { address } = (args ?? {}) as { address?: string };
         if (!address) return { content: [{ type: "text", text: JSON.stringify({ error: "Missing required parameter: address" }) }] };
         result = await getStakingInfo({ address });
+        break;
+      }
+
+      case "checkHealthFactor": {
+        const { address, threshold } = (args ?? {}) as { address?: string; threshold?: number };
+        if (!address) return { content: [{ type: "text", text: JSON.stringify({ error: "Missing required parameter: address" }) }] };
+        result = await checkHealthFactor(address, threshold ?? 1.5);
         break;
       }
 
