@@ -15,6 +15,7 @@ import { supplyAsset, borrowAsset, repayAsset, withdrawAsset, supplyNativeIKAS, 
 import { getEmissions, getUserRewards } from "./tools/getTokenomics.js";
 import { stakeKSKD, unstakeKSKD, getStakingInfo } from "./tools/manageStaking.js";
 import { checkHealthFactor } from "./tools/checkHealthFactor.js";
+import { claimKSKDRewards } from "./tools/claimRewards.js";
 
 // ─── Tool definitions ──────────────────────────────────────────────────────────
 
@@ -218,6 +219,23 @@ const TOOLS: Tool[] = [
     },
   },
   {
+    name: "claimRewards",
+    description:
+      "Claim all accrued KSKD rewards for the MCP wallet from the RewardsController. " +
+      "Checks claimable balance first - skips the transaction if nothing to claim. " +
+      "Rewards are earned by meeting epoch uptime and minimum position thresholds.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        address: {
+          type: "string",
+          description: "Optional: wallet address to claim rewards to. Defaults to the MCP wallet address.",
+        },
+      },
+      required: [],
+    },
+  },
+  {
     name: "checkHealthFactor",
     description:
       "Check a wallet's health factor against a threshold. Returns alert:true if HF is below threshold. " +
@@ -346,6 +364,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const { address } = (args ?? {}) as { address?: string };
         if (!address) return { content: [{ type: "text", text: JSON.stringify({ error: "Missing required parameter: address" }) }] };
         result = await getStakingInfo({ address });
+        break;
+      }
+
+      case "claimRewards": {
+        const { address: claimAddress } = (args ?? {}) as { address?: string };
+        result = await claimKSKDRewards({ address: claimAddress });
         break;
       }
 

@@ -177,5 +177,68 @@
       }
     ],
     "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "claimAllRewards",
+    "inputs": [
+      {
+        "name": "assets",
+        "type": "address[]",
+        "internalType": "address[]"
+      },
+      {
+        "name": "to",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "rewardsList",
+        "type": "address[]",
+        "internalType": "address[]"
+      },
+      {
+        "name": "claimedAmounts",
+        "type": "uint256[]",
+        "internalType": "uint256[]"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "claimRewards",
+    "inputs": [
+      {
+        "name": "assets",
+        "type": "address[]",
+        "internalType": "address[]"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "to",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "reward",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
   }
 ]
