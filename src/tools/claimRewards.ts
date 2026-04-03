@@ -65,12 +65,12 @@ export async function claimKSKDRewards(_params: Record<string, never> = {}): Pro
     } catch { /* skip dead reserves */ }
   }
 
-  // Check unclaimed amount using getAllUserRewards with aToken addresses
+  // Check claimable amount using getClaimableRewards with aToken addresses (accurate on-chain amount)
   let claimableBefore = 0n;
   try {
-    const result = await rewardsController.getAllUserRewards(aTokenAddresses, toAddress);
-    const unclaimedAmounts = result[1] as bigint[];
-    claimableBefore = unclaimedAmounts.reduce((a: bigint, b: bigint) => a + b, 0n);
+    const result = await rewardsController.getClaimableRewards(aTokenAddresses, toAddress);
+    const claimableAmounts = result[1] as bigint[];
+    claimableBefore = claimableAmounts.reduce((a: bigint, b: bigint) => a + b, 0n);
   } catch { /* non-critical */ }
 
   if (claimableBefore === 0n) {

@@ -121,18 +121,18 @@ export async function getUserRewards(params: { address: string }) {
       } catch { /* skip dead reserves */ }
     }
 
-    // getAllUserRewards returns total unclaimed (accrued + claimable) per reward token
-    const { rewardsList, unclaimedAmounts } = await rewardsController.getAllUserRewards(
+    // getClaimableRewards returns the actual on-chain claimable amount (what claimAllRewards will transfer)
+    const { rewardsList, claimableAmounts } = await rewardsController.getClaimableRewards(
       aTokenAddresses,
       address
     );
 
     const rewards = rewardsList.map((rewardToken, i) => ({
       rewardToken,
-      claimable: formatWad(unclaimedAmounts[i]),
+      claimable: formatWad(claimableAmounts[i]),
     })).filter(r => r.claimable > 0);
 
-    // Total KSKD unclaimed
+    // Total KSKD claimable
     const kskdEntry = rewards.find(r => r.rewardToken.toLowerCase() === TOKENS.KSKD.toLowerCase());
     const totalKSKD = kskdEntry?.claimable ?? 0;
 
@@ -140,7 +140,7 @@ export async function getUserRewards(params: { address: string }) {
       address,
       rewards,
       accruedKSKD: totalKSKD,
-      note: "Total unclaimed KSKD rewards (accrued across all epochs). Call claimRewards to collect.",
+      note: "Claimable KSKD rewards (on-chain amount transferable via claimAllRewards). Matches what the dApp claim center shows.",
     };
   });
 }
