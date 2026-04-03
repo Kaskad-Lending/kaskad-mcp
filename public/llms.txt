@@ -13,7 +13,7 @@ Kaskad exposes a Model Context Protocol (MCP) server for AI agent integration. A
 - [MCP Repository](https://github.com/Kaskad-Lending/kaskad-mcp): Source code, tool definitions, and AGENTS.md with full tokenomics context.
 - [Protocol Manifest](https://testnet.kaskad.live/kaskad.json): Machine-readable protocol manifest with contract addresses, supported assets, RPC endpoints, and MCP tool list.
 
-## MCP Tools (14 available)
+## MCP Tools (16 available)
 
 ### Read
 - getMarkets: All active lending markets with live APYs, utilization, and liquidity
@@ -21,8 +21,10 @@ Kaskad exposes a Model Context Protocol (MCP) server for AI agent integration. A
 - getProtocolInfo: Protocol metadata, contract addresses, network config
 - getGovernanceParams: Live governance parameters and their on-chain bounds
 - getHistory: Historical liquidations, APY snapshots, user transaction history
-- getTokenomics: Emission schedule, epoch state, KSKD oracle price, reward projections
+- getEmissions: Emission schedule, epoch state, vault depletion, TWAL TVL
+- getUserRewards: Claimable KSKD rewards for a wallet address
 - getStakingInfo: stKSKD balance, holding duration, governance eligibility
+- checkHealthFactor: Monitor wallet health factor against a threshold with alert levels
 
 ### Write
 - supply: Deposit an asset into the lending pool (earns supply APY)
@@ -31,17 +33,18 @@ Kaskad exposes a Model Context Protocol (MCP) server for AI agent integration. A
 - withdraw: Withdraw supplied assets (pass -1 to withdraw all)
 - stakeKSKD: Stake KSKD tokens to receive stKSKD (governance eligibility)
 - unstakeKSKD: Redeem stKSKD back to KSKD
+- claimRewards: Claim all accrued KSKD rewards from the RewardsController
 
 ## Network
 
 - Chain: Igra Galleon Testnet (EVM-compatible L2 on Kaspa)
 - RPC: https://galleon-testnet.igralabs.com:8545
-- Chain ID: 6661
+- Chain ID: 38836
 - Native token: iKAS
 
 ## Supported Assets
 
-USDC, WETH, USDT, WBTC, stETH, iKAS, WiKAS, KSKD, IGRA
+USDC, WETH, USDT, WBTC, stETH, iKAS, WIKAS, KSKD, IGRA
 
 ## Key Contracts
 

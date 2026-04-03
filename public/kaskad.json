@@ -1,0 +1,42 @@
+{
+  "protocol": "kaskad",
+  "version": "1.0.0-testnet",
+  "network": "igra-galleon-testnet",
+  "chainId": 38836,
+  "nativeCurrency": "iKAS",
+  "rpc": "https://galleon-testnet.igralabs.com:8545",
+  "explorer": "https://explorer.galleon-testnet.igralabs.com",
+  "dapp": "https://testnet.kaskad.live",
+  "mcp": "https://github.com/Kaskad-Lending/kaskad-mcp",
+  "contracts": {
+    "pool": "0xA1D84fc43f7F2D803a2d64dbBa4A90A9A79E3F24",
+    "poolAddressesProvider": "0x9DB9797733FE5F734724Aa05D29Fa39563563Af5",
+    "priceOracle": "0xc1198A9d400306a0406fD3E3Ad67140b3D059f48",
+    "uiPoolDataProvider": "0xbe38809914b552f295cD3e8dF2e77b3DA69cBC8b",
+    "rewardsController": "0x0eB9dc7DD4eDc2226a20093Ca0515D84b7529468",
+    "activityTracker": "0xa11FbfB7E69c3D8443335d30c5E6271bEE78b128",
+    "emissionManager": "0xcbcb1c3be7f32bf718b702f7b1700c36058edd8b",
+    "emissionVault": "0x18E5d69862E088B1ca326ACf48615875DF1763Af",
+    "kaskadGovernor": "0xE89b59a211C4645150830Bc63c112d01eE47e888",
+    "stKSKDVault": "0xbA98cd5cC5E99058834072B3428de126b433d594",
+    "wrappedTokenGateway": "0xaeb50b9b0340f760ab7c17eafcde90971083b4f9"
+  },
+  "tokens": {
+    "USDC": "0x32F59763c4b7F385DFC1DBB07742DaD4eeEccdb2",
+    "WETH": "0xB4129cEBD85bDEcdD775f539Ec8387619a0f1FAC",
+    "WBTC": "0x9dAc4c79bE2C541BE3584CE5244F3942554D6355",
+    "IGRA": "0x04443457b050BBaa195bb71Ef6CCDb519CcB1f0f",
+    "WIKAS": "0xA7CEd4eFE5C3aE0e5C26735559A77b1e38950a14",
+    "KSKD": "0x2d17780a59044D49FeEf0AA9cEaB1B6e3161aFf7"
+  },
+  "capabilities": [
+    "supply", "borrow", "repay", "withdraw",
+    "stakeKSKD", "unstakeKSKD", "claimRewards",
+    "getMarkets", "getPosition", "getProtocolInfo",
+    "getGovernanceParams", "getHistory",
+    "getEmissions", "getUserRewards",
+    "getStakingInfo", "checkHealthFactor"
+  ],
+  "docs": "https://github.com/Kaskad-Lending/kaskad-public-docs",
+  "whitepaper": "https://github.com/Kaskad-Lending/kaskad-public-docs/blob/main/Kaskad%20-%20Whitepaper%20V1.pdf"
+}
