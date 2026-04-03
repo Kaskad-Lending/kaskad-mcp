@@ -45,24 +45,32 @@ export async function claimKSKDRewards(_params: Record<string, never> = {}): Pro
   // Always claim to the MCP wallet itself — it is both the signer and the position holder
   const toAddress = wallet.address;
 
-  // Asset list: all reserve tokens (rewards accrue on aTokens/debtTokens, but
-  // RewardsController accepts underlying addresses and resolves internally)
-  const assetAddresses = Object.values(TOKENS);
-
   const rewardsController = new ethers.Contract(
     CONTRACTS.rewardsController,
     RewardsControllerABI,
     wallet
   );
 
-  // First: check claimable amount so we can report it
+  // Fetch aToken addresses from pool — rewards are tracked per aToken, not underlying
+  const poolABI = ["function getReservesList() view returns (address[])", "function getReserveData(address asset) view returns (uint256 configuration, uint128 liquidityIndex, uint128 currentLiquidityRate, uint128 variableBorrowIndex, uint128 currentVariableBorrowRate, uint128 currentStableBorrowRate, uint40 lastUpdateTimestamp, uint16 id, address aTokenAddress, address stableDebtTokenAddress, address variableDebtTokenAddress, address interestRateStrategyAddress, uint128 accruedToTreasury, uint128 unbacked, uint128 isolationModeTotalDebt)"];
+  const poolContract = new ethers.Contract(CONTRACTS.poolProxy, poolABI, provider);
+  const reserves: string[] = await poolContract.getReservesList();
+  const aTokenAddresses: string[] = [];
+  for (const reserve of reserves) {
+    try {
+      const rd = await poolContract.getReserveData(reserve);
+      if (rd.aTokenAddress && rd.aTokenAddress !== "0x0000000000000000000000000000000000000000") {
+        aTokenAddresses.push(rd.aTokenAddress);
+      }
+    } catch { /* skip dead reserves */ }
+  }
+
+  // Check unclaimed amount using getAllUserRewards with aToken addresses
   let claimableBefore = 0n;
   try {
-    const { claimableAmounts } = await rewardsController.getClaimableRewards(
-      assetAddresses,
-      toAddress
-    );
-    claimableBefore = (claimableAmounts as bigint[]).reduce((a, b) => a + b, 0n);
+    const result = await rewardsController.getAllUserRewards(aTokenAddresses, toAddress);
+    const unclaimedAmounts = result[1] as bigint[];
+    claimableBefore = unclaimedAmounts.reduce((a: bigint, b: bigint) => a + b, 0n);
   } catch { /* non-critical */ }
 
   if (claimableBefore === 0n) {
@@ -75,8 +83,8 @@ export async function claimKSKDRewards(_params: Record<string, never> = {}): Pro
     };
   }
 
-  // Execute claimAllRewards
-  const tx = await rewardsController.claimAllRewards(assetAddresses, toAddress, {
+  // Execute claimAllRewards with aToken addresses
+  const tx = await rewardsController.claimAllRewards(aTokenAddresses, toAddress, {
     gasPrice: GAS_PRICE,
     gasLimit: 1_700_000n,
   });
