@@ -35,27 +35,18 @@ node dist/index.js
 >
 > **Never commit your private key to git.** The `credentials/` directory is gitignored.
 
-The server needs a wallet private key to sign transactions. Three options (in priority order):
+The server requires a wallet private key to sign transactions. **Use `MCP_WALLET_KEY` — it is the only recommended method.**
 
-**Option 1 — Environment variable (recommended)**
+**Recommended — Environment variable**
 ```bash
 export MCP_WALLET_KEY=0xYOUR_TESTNET_PRIVATE_KEY
 node dist/index.js
 ```
 
-**Option 2 — Local credentials file**
-```bash
-mkdir credentials
-echo '{"privateKey":"0xYOUR_TESTNET_PRIVATE_KEY"}' > credentials/wallet.json
-node dist/index.js
-```
+For MCP clients (Claude Desktop, OpenClaw, etc.), inject it via the `env` block in your client config (see MCP Client Config section below). The key never touches the filesystem.
 
-**Option 3 — Home directory**
-```bash
-mkdir ~/.kaskad-mcp
-echo '{"privateKey":"0xYOUR_TESTNET_PRIVATE_KEY"}' > ~/.kaskad-mcp/wallet.json
-node dist/index.js
-```
+> **Why not `wallet.json`?**
+> The server also supports `credentials/wallet.json` and `~/.kaskad-mcp/wallet.json` as fallback paths for local development convenience. However, Anton (SC Architect) flagged these as an unnecessary attack surface — file-based key storage introduces git-commit risk, filesystem exposure, and misconfigured permission vectors. **Do not use `wallet.json` in any shared, CI, or production-adjacent environment.** If you must use a file locally, ensure `credentials/` stays gitignored (it is by default) and restrict file permissions (`chmod 600`).
 
 > **Trust boundary:** The server enforces a minimum 100 iKAS reserve in the wallet at all times (to cover gas fees).
 
