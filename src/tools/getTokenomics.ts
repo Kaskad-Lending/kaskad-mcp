@@ -7,6 +7,7 @@ import {
   RewardsControllerContract,
   ActivityTrackerContract,
   ERC20Contract,
+  PoolContract,
 } from "../typed-contracts.js";
 
 const WAD = 10n ** 18n;
@@ -15,6 +16,7 @@ const emissionManager = new EmissionManagerContract(CONTRACTS.emissionManager);
 const emissionVault = new EmissionVaultContract(CONTRACTS.emissionVault);
 const rewardsController = new RewardsControllerContract(CONTRACTS.rewardsController);
 const activityTracker = new ActivityTrackerContract(CONTRACTS.activityTracker);
+const pool = new PoolContract(CONTRACTS.poolProxy);
 
 /** Format bigint token amount (18 decimals) to human number */
 function formatWad(val: bigint): number {
@@ -107,32 +109,38 @@ export async function getUserRewards(params: { address: string }) {
   }
 
   return safeCall(async () => {
-    // Get all aToken addresses for rewards query — rewards are tracked per aToken/debtToken, not underlying
-    // We need reserve data to get aToken addresses, but we can use a simpler approach:
-    // getAllUserRewards with the known token addresses as assets
-    const assetAddresses = Object.values(TOKENS);
+    // Fetch aToken addresses from the pool — rewards are tracked per aToken, not underlying token
+    const reserves = await pool.getReservesList();
+    const aTokenAddresses: string[] = [];
+    for (const reserve of reserves) {
+      try {
+        const rd = await pool.getReserveData(reserve);
+        if (rd.aTokenAddress && rd.aTokenAddress !== "0x0000000000000000000000000000000000000000") {
+          aTokenAddresses.push(rd.aTokenAddress);
+        }
+      } catch { /* skip dead reserves */ }
+    }
 
-    const { rewardsList, claimableAmounts } = await rewardsController.getClaimableRewards(
-      assetAddresses,
+    // getAllUserRewards returns total unclaimed (accrued + claimable) per reward token
+    const { rewardsList, unclaimedAmounts } = await rewardsController.getAllUserRewards(
+      aTokenAddresses,
       address
     );
 
     const rewards = rewardsList.map((rewardToken, i) => ({
       rewardToken,
-      claimable: formatWad(claimableAmounts[i]),
+      claimable: formatWad(unclaimedAmounts[i]),
     })).filter(r => r.claimable > 0);
 
-    // Also get accrued KSKD specifically
-    let accruedKSKD = 0n;
-    try {
-      accruedKSKD = await rewardsController.getUserAccruedRewards(address, TOKENS.KSKD);
-    } catch { /* ignore */ }
+    // Total KSKD unclaimed
+    const kskdEntry = rewards.find(r => r.rewardToken.toLowerCase() === TOKENS.KSKD.toLowerCase());
+    const totalKSKD = kskdEntry?.claimable ?? 0;
 
     return {
       address,
       rewards,
-      accruedKSKD: formatWad(accruedKSKD),
-      note: "Claimable rewards from KSKD emission incentives. Eligibility requires meeting uptime and minimum position thresholds per epoch.",
+      accruedKSKD: totalKSKD,
+      note: "Total unclaimed KSKD rewards (accrued across all epochs). Call claimRewards to collect.",
     };
   });
 }

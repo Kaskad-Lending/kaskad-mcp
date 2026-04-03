@@ -117,11 +117,14 @@ export async function getPosition(
         }
       }
 
+      const suppliedTokens = Math.round(Number((aBalance * 1_000_000n) / denom)) / 1_000_000;
+      const borrowedTokens = Math.round(Number((debtBalance * 1_000_000n) / denom)) / 1_000_000;
+
       positions.push({
         asset: symbol,
         address: addr,
-        supplied: Math.round(suppliedUSD * 100) / 100,
-        borrowed: Math.round(borrowedUSD * 100) / 100,
+        supplied: Math.round(suppliedTokens * 100) / 100,
+        borrowed: Math.round(borrowedTokens * 100) / 100,
         suppliedUSD: Math.round(suppliedUSD * 100) / 100,
         borrowedUSD: Math.round(borrowedUSD * 100) / 100,
       });
