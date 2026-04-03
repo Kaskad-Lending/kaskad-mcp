@@ -24,17 +24,27 @@ function getProvider() {
   );
 }
 
-function getSigner() {
+async function getSigner() {
+  const provider = getProvider();
+  // Try env var first, then wallet.json (same pattern as executeTransaction.ts)
   const key = process.env.MCP_WALLET_KEY;
-  if (!key) throw new Error("MCP_WALLET_KEY not set");
-  return new ethers.Wallet(key, getProvider());
+  if (key) return new ethers.Wallet(key, provider);
+  try {
+    const fs = await import("fs");
+    const path = await import("path");
+    const walletPath = path.resolve(process.cwd(), "credentials/wallet.json");
+    const creds = JSON.parse(fs.readFileSync(walletPath, "utf8"));
+    return new ethers.Wallet(creds.privateKey, provider);
+  } catch {
+    throw new Error("No wallet key found. Set MCP_WALLET_KEY or place credentials/wallet.json");
+  }
 }
 
 export async function stakeKSKD(params: { amount: number }) {
   const { amount } = params;
   if (!amount || amount <= 0) return { error: "amount must be > 0" };
 
-  const signer = getSigner();
+  const signer = await getSigner();
   const vault = new ethers.Contract(CONTRACTS.stKSKDVault, VAULT_ABI, signer);
   const kskd = new ethers.Contract(TOKENS.KSKD, ERC20_ABI, signer);
 
@@ -73,7 +83,7 @@ export async function unstakeKSKD(params: { shares: number }) {
   const { shares } = params;
   if (!shares || shares <= 0) return { error: "shares must be > 0" };
 
-  const signer = getSigner();
+  const signer = await getSigner();
   const vault = new ethers.Contract(CONTRACTS.stKSKDVault, VAULT_ABI, signer);
 
   const sharesWei = ethers.parseEther(shares.toString());
