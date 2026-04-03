@@ -38,14 +38,12 @@ function loadWallet(provider: ethers.JsonRpcProvider): ethers.Wallet {
   throw new Error("No wallet key found. Set MCP_WALLET_KEY env var.");
 }
 
-export async function claimKSKDRewards(params: {
-  address?: string; // optional — defaults to MCP wallet address
-}): Promise<object> {
+export async function claimKSKDRewards(_params: Record<string, never> = {}): Promise<object> {
   const provider = new ethers.JsonRpcProvider(RPC_URL);
   const wallet = loadWallet(provider);
 
-  // Claim to wallet address by default; allow override for read-only wallets watching another address
-  const toAddress = params.address ?? wallet.address;
+  // Always claim to the MCP wallet itself — it is both the signer and the position holder
+  const toAddress = wallet.address;
 
   // Asset list: all reserve tokens (rewards accrue on aTokens/debtTokens, but
   // RewardsController accepts underlying addresses and resolves internally)

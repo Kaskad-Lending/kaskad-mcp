@@ -226,12 +226,7 @@ const TOOLS: Tool[] = [
       "Rewards are earned by meeting epoch uptime and minimum position thresholds.",
     inputSchema: {
       type: "object",
-      properties: {
-        address: {
-          type: "string",
-          description: "Optional: wallet address to claim rewards to. Defaults to the MCP wallet address.",
-        },
-      },
+      properties: {},
       required: [],
     },
   },
@@ -368,8 +363,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "claimRewards": {
-        const { address: claimAddress } = (args ?? {}) as { address?: string };
-        result = await claimKSKDRewards({ address: claimAddress });
+        result = await claimKSKDRewards();
         break;
       }
 
