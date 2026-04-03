@@ -5,15 +5,17 @@ export const SUBGRAPH_URL = "https://testnet.kaskad.live/subgraphs/name/galleon-
 
 export const CONTRACTS = {
   priceOracle:           "0xc1198A9d400306a0406fD3E3Ad67140b3D059f48",
-  poolProxy:             "0xA1D84fc43f7F2D803a2d64dbBa4A90A9A79E3F24",
-  poolAddressesProvider: "0x9DB9797733FE5F734724Aa05D29Fa39563563Af5",
-  uiPoolDataProvider:    "0xbe38809914b552f295cD3e8dF2e77b3DA69cBC8b",
-  rewardsController:     "0x0eB9dc7DD4eDc2226a20093Ca0515D84b7529468",
-  activityTracker:       "0xa11FbfB7E69c3D8443335d30c5E6271bEE78b128",
-  kaskadStrategy:        "0x895016f79282D9A5C8faEA7FcB935310042fF836",
+  // New deployment (synced from testnet.kaskad.live bundle 2026-04-03)
+  poolProxy:             "0x44e8Eeb3602e34aBc8eC05358A2EdD1d95Ec6b1A",
+  poolAddressesProvider: "0x9B78803558F9Ea56F4f0a966322C8dD9B2fBebc0",
+  uiPoolDataProvider:    "0x6A643eebEC9A1aA87943A223A616EF434A0520Cc",
+  rewardsController:     "0x5946c50AB77a2d85F917123E48C4C678A657d6B2",
+  activityTracker:       "0xc1aFae4Bb794985E8aDd8e669e1164E374A1554D",
+  kaskadStrategy:        "0xEcB673E8eeFa5b5cd027f364189Acc24C56800e0",
   // Kaskad staking vault — stake/unstake KSKD, grants governance eligibility
-  stKSKDVault:           "0xbA98cd5cC5E99058834072B3428de126b433d594",
-  // Tokenomics — emission system
+  stKSKDVault:           "0x72f21814db9AC28367DD5289020B9053844Fb2Bb",
+  governor:              "0xcF9fE13F74B6C933636EdFbB150892f53A73545b",
+  // Tokenomics — emission system (emissionVault/Manager not in new bundle yet, keep old)
   emissionManager:       "0xcbcb1c3be7f32bf718b702f7b1700c36058edd8b",
   emissionVault:         "0x18E5d69862E088B1ca326ACf48615875DF1763Af",
 } as const;
@@ -30,14 +32,14 @@ export const DEAD_POOL_ADDRESSES = new Set([
   "0x9c68fb08f127a263eb685ee25a68bed704d6b2de", // KSKD v2
 ]);
 
-// Token addresses — current deploy (updated from bundle index-DSNj_0fi.js, Mar 23 2026)
+// Token addresses — new deploy (synced from testnet.kaskad.live bundle 2026-04-03)
 export const TOKENS: Record<string, string> = {
-  KSKD:  "0x2d17780a59044D49FeEf0AA9cEaB1B6e3161aFf7",
+  KSKD:  "0xd884991BbaB6d5644fFE29000088bbB359AD5e9e",  // updated in new deploy
   USDC:  "0x32F59763c4b7F385DFC1DBB07742DaD4eeEccdb2",
   WBTC:  "0x9dAc4c79bE2C541BE3584CE5244F3942554D6355",
   WETH:  "0xB4129cEBD85bDEcdD775f539Ec8387619a0f1FAC",
   IKAS:  "0xA7CEd4eFE5C3aE0e5C26735559A77b1e38950a14",  // WIKAS on-chain, IKAS in UI
-  IGRA:  "0x04443457b050BBaa195bb71Ef6CCDb519CcB1f0f",
+  IGRA:  "0x700b6A60ce7EaaEA56F065753d8dcB9653dbAD35",  // updated in new deploy
 };
 
 // Reverse mapping: address → symbol
