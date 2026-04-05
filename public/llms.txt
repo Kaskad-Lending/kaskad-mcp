@@ -44,7 +44,7 @@ Kaskad exposes a Model Context Protocol (MCP) server for AI agent integration. A
 
 ## Supported Assets
 
-USDC, WETH, USDT, WBTC, stETH, iKAS, WIKAS, KSKD, IGRA
+USDC, WETH, WBTC, iKAS, WIKAS, KSKD, IGRA
 
 ## Key Contracts
 
