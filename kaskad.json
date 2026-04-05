@@ -3,48 +3,50 @@
   "version": "1.0.0-testnet",
   "network": "igra-galleon-testnet",
   "chainId": 38836,
+  "nativeCurrency": "iKAS",
+  "rpc": "https://galleon-testnet.igralabs.com:8545",
+  "explorer": "https://explorer.galleon-testnet.igralabs.com",
+  "dapp": "https://testnet.kaskad.live",
+  "mcp": "https://github.com/Kaskad-Lending/kaskad-mcp",
   "contracts": {
     "pool": "0xA1D84fc43f7F2D803a2d64dbBa4A90A9A79E3F24",
-    "poolAddressesProvider": "0x9B78803558F9Ea56F4f0a966322C8dD9B2fBebc0",
-    "uiPoolDataProvider": "0x6A643eebEC9A1aA87943A223A616EF434A0520Cc",
+    "poolAddressesProvider": "0x9DB9797733FE5F734724Aa05D29Fa39563563Af5",
     "priceOracle": "0xc1198A9d400306a0406fD3E3Ad67140b3D059f48",
+    "uiPoolDataProvider": "0xbe38809914b552f295cD3e8dF2e77b3DA69cBC8b",
     "rewardsController": "0x0eB9dc7DD4eDc2226a20093Ca0515D84b7529468",
-    "governor": "0xE89b59a211C4645150830Bc63c112d01eE47e888",
     "activityTracker": "0xa11FbfB7E69c3D8443335d30c5E6271bEE78b128",
-    "stKSKDVault": "0xbA98cd5cC5E99058834072B3428de126b433d594",
-    "wrappedTokenGateway": "0xaeb50b9b0340f760ab7c17eafcde90971083b4f9",
+    "emissionManager": "0xcbcb1c3be7f32bf718b702f7b1700c36058edd8b",
     "emissionVault": "0x18E5d69862E088B1ca326ACf48615875DF1763Af",
-    "strategy": "0x895016f79282D9A5C8faEA7FcB935310042fF836"
+    "kaskadGovernor": "0xE89b59a211C4645150830Bc63c112d01eE47e888",
+    "stKSKDVault": "0xbA98cd5cC5E99058834072B3428de126b433d594",
+    "wrappedTokenGateway": "0xaeb50b9b0340f760ab7c17eafcde90971083b4f9"
   },
   "tokens": {
-    "KSKD": "0x2d17780a59044D49FeEf0AA9cEaB1B6e3161aFf7",
     "USDC": "0x32F59763c4b7F385DFC1DBB07742DaD4eeEccdb2",
-    "WBTC": "0x9dAc4c79bE2C541BE3584CE5244F3942554D6355",
     "WETH": "0xB4129cEBD85bDEcdD775f539Ec8387619a0f1FAC",
-    "IKAS": "0xA7CEd4eFE5C3aE0e5C26735559A77b1e38950a14",
-    "IGRA": "0x04443457b050BBaa195bb71Ef6CCDb519CcB1f0f"
+    "WBTC": "0x9dAc4c79bE2C541BE3584CE5244F3942554D6355",
+    "IGRA": "0x04443457b050BBaa195bb71Ef6CCDb519CcB1f0f",
+    "WIKAS": "0xA7CEd4eFE5C3aE0e5C26735559A77b1e38950a14",
+    "KSKD": "0x2d17780a59044D49FeEf0AA9cEaB1B6e3161aFf7"
   },
-  "endpoints": {
-    "rpc": "https://galleon-testnet.igralabs.com:8545",
-    "subgraph": "https://testnet.kaskad.live/subgraphs/name/galleon-testnet-aave-v3",
-    "dapp": "https://testnet.kaskad.live",
-    "docs": "https://github.com/Kaskad-Lending/kaskad-public-docs",
-    "mcp": "https://github.com/Kaskad-Lending/kaskad-mcp"
-  },
-  "capabilities": ["supply", "borrow", "repay", "withdraw", "stake", "unstake", "governance"],
-  "agentInterface": {
-    "mcp": "https://github.com/Kaskad-Lending/kaskad-mcp",
-    "tools": [
-      "getMarkets", "getPosition", "getGovernanceParams", "getEmissions",
-      "getUserRewards", "getHistory", "getProtocolInfo", "getStakingInfo",
-      "supply", "borrow", "repay", "withdraw", "stakeKSKD", "unstakeKSKD"
-    ],
-    "agents_guide": "https://github.com/Kaskad-Lending/kaskad-mcp/blob/main/AGENTS.md"
-  },
-  "oracle": "kaskad-price-oracle-v1",
-  "gasRequirements": {
-    "minGasPriceGwei": 2000,
-    "recommendedGasLimit": 1700000,
-    "note": "Igra Galleon requires minimum 2000 Gwei gas price. eth_estimateGas underestimates — use 1,700,000 gas limit for pool operations."
-  }
+  "capabilities": [
+    "supply",
+    "borrow",
+    "repay",
+    "withdraw",
+    "stakeKSKD",
+    "unstakeKSKD",
+    "claimRewards",
+    "getMarkets",
+    "getPosition",
+    "getProtocolInfo",
+    "getGovernanceParams",
+    "getHistory",
+    "getEmissions",
+    "getUserRewards",
+    "getStakingInfo",
+    "checkHealthFactor"
+  ],
+  "docs": "https://github.com/Kaskad-Lending/kaskad-public-docs",
+  "whitepaper": "https://github.com/Kaskad-Lending/kaskad-public-docs/blob/main/Kaskad%20-%20Whitepaper%20V1.pdf"
 }
