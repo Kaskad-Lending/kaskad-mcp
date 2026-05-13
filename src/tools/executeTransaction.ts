@@ -24,8 +24,8 @@ const IKAS_MINIMUM = ethers.parseUnits("100", "ether"); // 18 decimals, same as 
 const GAS_PRICE = ethers.parseUnits("2000", "gwei");
 
 // Wrapped Token Gateway — handles native iKAS supply/withdraw
-// Source: testnet.kaskad.live bundle (chain 38836 config)
-const WRAPPED_TOKEN_GATEWAY = "0xaeb50b9b0340f760ab7c17eafcde90971083b4f9";
+// Address sourced from config (env-driven per network)
+const WRAPPED_TOKEN_GATEWAY = CONTRACTS.wrappedTokenGateway;
 
 // Actual ABI from testnet.kaskad.live bundle — first param of depositETH is unnamed (not pool)
 const GATEWAY_ABI = [
