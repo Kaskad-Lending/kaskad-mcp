@@ -1,5 +1,5 @@
 import { AbiCoder, Interface, InterfaceAbi } from "ethers";
-import { RPC_URL } from "./contracts.js";
+import { RPC_URL, NETWORK } from "./contracts.js";
 
 let _reqId = 1;
 
@@ -73,7 +73,7 @@ export async function safeCall<T>(
     return await fn();
   } catch (err) {
     return {
-      error: "Igra testnet RPC unavailable",
+      error: NETWORK === "mainnet" ? "Igra mainnet RPC unavailable" : "Igra testnet RPC unavailable",
       rpc: RPC_URL,
     };
   }

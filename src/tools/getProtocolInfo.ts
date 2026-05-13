@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import { CONTRACTS, TOKENS, RPC_URL, CHAIN_ID } from "../contracts.js";
+import { CONTRACTS, TOKENS, RPC_URL, CHAIN_ID, NETWORK, DAPP_URL, EXPLORER_URL, DOCS_URL } from "../contracts.js";
 
 export function getProtocolInfo() {
   // Embed AGENTS.md so any agent calling getProtocolInfo gets full strategy context upfront
@@ -10,13 +10,13 @@ export function getProtocolInfo() {
     const agentsPath = path.resolve(process.cwd(), "AGENTS.md");
     agentsGuide = fs.readFileSync(agentsPath, "utf8");
   } catch {
-    agentsGuide = "AGENTS.md not found — refer to https://testnet.kaskad.live for protocol documentation.";
+    agentsGuide = `AGENTS.md not found — refer to ${DAPP_URL} for protocol documentation.`;
   }
 
   return {
     protocol: "Kaskad Protocol",
     version: "v1.0 (Aave v3 fork)",
-    network: "Igra Galleon Testnet",
+    network: NETWORK === "mainnet" ? "Igra Mainnet" : "Igra Galleon Testnet",
     chainId: CHAIN_ID,
     rpc: RPC_URL,
     contracts: {
@@ -31,9 +31,9 @@ export function getProtocolInfo() {
       symbol,
       address,
     })),
-    documentation: "https://docs.kaskad.live",
-    dapp: "https://testnet.kaskad.live",
-    explorer: "https://explorer.galleon-testnet.igralabs.com",
+    documentation: DOCS_URL,
+    dapp: DAPP_URL,
+    explorer: EXPLORER_URL,
     agentsGuide,
     agentsGuideNote: "Full integration guide — read before strategizing. Covers emission schedule, eligibility rules, governance params, gas requirements, and KSKD incentive mechanics. For live voted params, call getGovernanceParams().",
   };

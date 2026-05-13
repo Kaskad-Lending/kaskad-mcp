@@ -1,7 +1,7 @@
 {
   "name": "kaskad-mcp",
   "version": "1.0.0",
-  "description": "MCP server for Kaskad Protocol testnet — reads live on-chain state from Igra Galleon",
+  "description": "MCP server for Kaskad Protocol — reads live on-chain state from Igra (testnet or mainnet). Set KASKAD_NETWORK=mainnet for mainnet.",
   "main": "dist/index.js",
   "scripts": {
     "build": "npx tsc",
