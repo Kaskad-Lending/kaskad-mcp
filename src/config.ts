@@ -65,42 +65,40 @@ const TESTNET = {
   ]),
 };
 
-// ─── Mainnet overrides — populated via env vars after mainnet deploy ─────────
-// Required env vars (mainnet only):
-//   KASKAD_CHAIN_ID, KASKAD_RPC_URL, KASKAD_SUBGRAPH_URL
-//   KASKAD_CONTRACT_<NAME> for each contract key
-//   KASKAD_TOKEN_<SYMBOL> for each token symbol
+// ─── Mainnet — Igra Mainnet (chain ID 38833) ────────────────────────────────
+// Addresses sourced from https://reactor.kaskad.live/api/setup/igra_mainnet
+// (updated 2026-05-27). Env vars can override any value at runtime.
 
 const MAINNET = {
-  CHAIN_ID: parseInt(process.env.KASKAD_CHAIN_ID ?? "0", 10),
-  RPC_URL: process.env.KASKAD_RPC_URL ?? "",
+  CHAIN_ID: parseInt(process.env.KASKAD_CHAIN_ID ?? "38833", 10),
+  RPC_URL: process.env.KASKAD_RPC_URL ?? "https://rpc.igralabs.com:8545",
   SUBGRAPH_URL: process.env.KASKAD_SUBGRAPH_URL ?? "",
   DAPP_URL: process.env.KASKAD_DAPP_URL ?? "https://app.kaskad.live",
-  EXPLORER_URL: process.env.KASKAD_EXPLORER_URL ?? "",
+  EXPLORER_URL: process.env.KASKAD_EXPLORER_URL ?? "https://explorer.igralabs.com",
   DOCS_URL: process.env.KASKAD_DOCS_URL ?? "https://docs.kaskad.live",
 
   CONTRACTS: {
-    priceOracle:           process.env.KASKAD_CONTRACT_PRICE_ORACLE           ?? "",
-    poolProxy:             process.env.KASKAD_CONTRACT_POOL_PROXY             ?? "",
-    poolAddressesProvider: process.env.KASKAD_CONTRACT_POOL_ADDRESSES_PROVIDER ?? "",
-    uiPoolDataProvider:    process.env.KASKAD_CONTRACT_UI_POOL_DATA_PROVIDER  ?? "",
-    rewardsController:     process.env.KASKAD_CONTRACT_REWARDS_CONTROLLER     ?? "",
-    activityTracker:       process.env.KASKAD_CONTRACT_ACTIVITY_TRACKER       ?? "",
-    kaskadStrategy:        process.env.KASKAD_CONTRACT_KASKAD_STRATEGY        ?? "",
-    stKSKDVault:           process.env.KASKAD_CONTRACT_ST_KSKD_VAULT          ?? "",
-    governor:              process.env.KASKAD_CONTRACT_GOVERNOR               ?? "",
-    emissionManager:       process.env.KASKAD_CONTRACT_EMISSION_MANAGER       ?? "",
-    emissionVault:         process.env.KASKAD_CONTRACT_EMISSION_VAULT         ?? "",
-    wrappedTokenGateway:   process.env.KASKAD_CONTRACT_WRAPPED_TOKEN_GATEWAY  ?? "",
+    priceOracle:           process.env.KASKAD_CONTRACT_PRICE_ORACLE            ?? "0xcf5C2E2509e28a225115FD51Fad1a45c7E91A08A",
+    poolProxy:             process.env.KASKAD_CONTRACT_POOL_PROXY              ?? "0x1Fc4f91E99eFDC90c4B2B8F69fE0b4BFd819a330",
+    poolAddressesProvider: process.env.KASKAD_CONTRACT_POOL_ADDRESSES_PROVIDER ?? "0x4e718714BF19c7BBcf402ecA92f971B8a65c716D",
+    uiPoolDataProvider:    process.env.KASKAD_CONTRACT_UI_POOL_DATA_PROVIDER   ?? "0xC76656F7dd9B155DaA57430cb5B5b97eAB64B4b5",
+    rewardsController:     process.env.KASKAD_CONTRACT_REWARDS_CONTROLLER      ?? "0xf8dbB86662B63c4a8cF5a88D9517c22bD78C73dB",
+    activityTracker:       process.env.KASKAD_CONTRACT_ACTIVITY_TRACKER        ?? "0xBD305cA31Ea88dA80D7e5B48b965B004f6e1aB93",
+    kaskadStrategy:        process.env.KASKAD_CONTRACT_KASKAD_STRATEGY         ?? "0x59d9E10B6e6e446A919Ed6d9aaE42178D1069307",
+    stKSKDVault:           process.env.KASKAD_CONTRACT_ST_KSKD_VAULT           ?? "0xC86764586f2cF1D1014B88E51956965C6d7db524",
+    governor:              process.env.KASKAD_CONTRACT_GOVERNOR                ?? "0x89fB31943F1bF5f1FB0315283d915c9f4643f930",
+    emissionManager:       process.env.KASKAD_CONTRACT_EMISSION_MANAGER        ?? "0xCaA80C8222e8A239F40c4e72293E849772a230D6",
+    emissionVault:         process.env.KASKAD_CONTRACT_EMISSION_VAULT          ?? "0xBf30B72Ff8ad6bB4103A72272A2C3fa17194274b",
+    wrappedTokenGateway:   process.env.KASKAD_CONTRACT_WRAPPED_TOKEN_GATEWAY   ?? "0xC8885FAa4A15e7f66a198666df469C9DD33c672d",
   },
 
   TOKENS: {
-    KSKD: process.env.KASKAD_TOKEN_KSKD ?? "",
-    USDC: process.env.KASKAD_TOKEN_USDC ?? "",
-    WBTC: process.env.KASKAD_TOKEN_WBTC ?? "",
-    WETH: process.env.KASKAD_TOKEN_WETH ?? "",
-    IKAS: process.env.KASKAD_TOKEN_IKAS ?? "",
-    IGRA: process.env.KASKAD_TOKEN_IGRA ?? "",
+    KSKD: process.env.KASKAD_TOKEN_KSKD ?? "0x16d92794F5B81d2CdEd0F0958779A410401e6435",
+    USDC: process.env.KASKAD_TOKEN_USDC ?? "0xA5b8BF902b2844dA17d4506cc827F7F1681735E7",
+    USDT: process.env.KASKAD_TOKEN_USDT ?? "0x46346F49b4fe8c640c5FCdbed2d6741056FEB959",
+    WETH: process.env.KASKAD_TOKEN_WETH ?? "0x69790024D44504F05973E127197E6df17e283859",
+    CBBTC: process.env.KASKAD_TOKEN_CBBTC ?? "0xF2B48b6e560af8834622203a8EEff6960d6172De",
+    IKAS: process.env.KASKAD_TOKEN_IKAS ?? "0x17Ec7E1768c813E2a3a9b0f94A35605CA520C242",
   },
 
   DEAD_POOL_ADDRESSES: new Set<string>(),
@@ -130,23 +128,5 @@ export const ACTIVE_ASSETS: Record<string, string> = TOKENS;
 
 // ─── Startup validation (mainnet only) ───────────────────────────────────────
 
-if (NETWORK === "mainnet") {
-  const missing: string[] = [];
-
-  if (!CHAIN_ID) missing.push("KASKAD_CHAIN_ID");
-  if (!RPC_URL)  missing.push("KASKAD_RPC_URL");
-
-  for (const [key, val] of Object.entries(CONTRACTS)) {
-    if (!val) missing.push(`KASKAD_CONTRACT_${key.toUpperCase()}`);
-  }
-  for (const [sym, val] of Object.entries(TOKENS)) {
-    if (!val) missing.push(`KASKAD_TOKEN_${sym}`);
-  }
-
-  if (missing.length > 0) {
-    console.error(
-      `[kaskad-mcp] FATAL: KASKAD_NETWORK=mainnet but missing env vars:\n  ${missing.join("\n  ")}`
-    );
-    process.exit(1);
-  }
-}
+// Mainnet addresses are now hardcoded — no startup validation needed.
+// Env var overrides are still accepted for any field.
