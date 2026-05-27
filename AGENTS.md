@@ -1,10 +1,12 @@
-# AGENTS Guide: Interacting With Kaskad Lending Testnet
+# AGENTS Guide: Interacting With Kaskad Lending
 
-Welcome to the Kaskad Lending integration guide for Agents. This document provides clear, **verified** examples of how you should collect protocol and user data, and how to execute on-chain transactions against the Aave V3 core contracts deployed on the Galleon testnet.
+Welcome to the Kaskad Lending integration guide for Agents. This document provides clear, **verified** examples of how you should collect protocol and user data, and how to execute on-chain transactions against the Aave V3 core contracts deployed on Igra.
+
+> **Network:** This MCP server is configured via `KASKAD_NETWORK` env var. Set to `mainnet` for Igra Mainnet (chain 38833), or `testnet` for Igra Galleon Testnet (chain 38836). Contract addresses and RPC are resolved automatically.
 
 ---
 
-> **CRITICAL**: Galleon testnet silently drops transactions with insufficient gas. If a transaction disappears or `ethers.js` throws a timeout/revert without a reason, it is almost certainly a gas exception. The Galleon node incorrectly estimates `maxPriorityFeePerGas` at 500 Gwei, but the actual network minimum is **`2000 Gwei`**. Any transaction below `2000 Gwei` will be dropped.
+> **CRITICAL**: Igra network silently drops transactions with insufficient gas. If a transaction disappears or `ethers.js` throws a timeout/revert without a reason, it is almost certainly a gas exception. The node incorrectly estimates `maxPriorityFeePerGas` at 500 Gwei, but the actual network minimum is **`2000 Gwei`**. Any transaction below `2000 Gwei` will be dropped.
 
 ## MCP Tools (Recommended)
 
@@ -19,7 +21,7 @@ If you have the `kaskad-mcp` server connected, **use MCP tools instead of raw RP
 | `getUserRewards` | Claimable KSKD rewards for a wallet |
 | `getProtocolInfo` | Static metadata + this guide |
 | `getHistory` | Subgraph: liquidations, APY snapshots, user tx history |
-| `supply` / `borrow` / `repay` / `withdraw` | Execute pool operations (testnet only) |
+| `supply` / `borrow` / `repay` / `withdraw` | Execute pool operations (real funds on mainnet — use with care) |
 
 **Always call `getGovernanceParams` before strategizing** — the emission split directly affects optimal positioning.
 
@@ -27,11 +29,42 @@ If you have the `kaskad-mcp` server connected, **use MCP tools instead of raw RP
 
 ## Network & Key Addresses
 
-- **RPC URL:** `https://galleon-testnet.igralabs.com:8545`
-- **Chain ID:** `38836`
-- **Subgraph Endpoint:** `https://testnet.kaskad.live/subgraphs/name/galleon-testnet-aave-v3`
+Addresses below are resolved dynamically by the MCP server based on `KASKAD_NETWORK`. Call `getProtocolInfo()` to get live addresses for the active network.
 
-### Core Contracts
+### Igra Mainnet (chain 38833) — KASKAD_NETWORK=mainnet
+
+- **RPC URL:** `https://rpc.igralabs.com:8545`
+- **Subgraph Endpoint:** TBD (not yet deployed)
+- **Explorer:** `https://explorer.igralabs.com`
+
+| Contract | Address |
+|----------|---------|
+| Pool Proxy (Aave V3) | `0x1Fc4f91E99eFDC90c4B2B8F69fE0b4BFd819a330` |
+| PoolAddressesProvider | `0x4e718714BF19c7BBcf402ecA92f971B8a65c716D` |
+| UiPoolDataProvider | `0xC76656F7dd9B155DaA57430cb5B5b97eAB64B4b5` |
+| PriceOracle | `0xcf5C2E2509e28a225115FD51Fad1a45c7E91A08A` |
+| KaskadGovernor | `0x89fB31943F1bF5f1FB0315283d915c9f4643f930` |
+| RewardsController | `0xf8dbB86662B63c4a8cF5a88D9517c22bD78C73dB` |
+| ActivityTracker | `0xBD305cA31Ea88dA80D7e5B48b965B004f6e1aB93` |
+| EmissionManager | `0xCaA80C8222e8A239F40c4e72293E849772a230D6` |
+| EmissionVault | `0xBf30B72Ff8ad6bB4103A72272A2C3fa17194274b` |
+| stKSKD Vault | `0xC86764586f2cF1D1014B88E51956965C6d7db524` |
+| WrappedTokenGateway | `0xC8885FAa4A15e7f66a198666df469C9DD33c672d` |
+
+| Token | Address |
+|-------|---------|
+| KSKD | `0x16d92794F5B81d2CdEd0F0958779A410401e6435` |
+| USDC | `0xA5b8BF902b2844dA17d4506cc827F7F1681735E7` |
+| USDT | `0x46346F49b4fe8c640c5FCdbed2d6741056FEB959` |
+| WETH | `0x69790024D44504F05973E127197E6df17e283859` |
+| cbBTC | `0xF2B48b6e560af8834622203a8EEff6960d6172De` |
+| iKAS | `0x17Ec7E1768c813E2a3a9b0f94A35605CA520C242` |
+
+### Igra Galleon Testnet (chain 38836) — KASKAD_NETWORK=testnet
+
+- **RPC URL:** `https://galleon-testnet.igralabs.com:8545`
+- **Subgraph Endpoint:** `https://testnet.kaskad.live/subgraphs/name/galleon-testnet-aave-v3`
+- **Explorer:** `https://explorer.galleon-testnet.igralabs.com`
 
 | Contract | Address |
 |----------|---------|
@@ -46,8 +79,6 @@ If you have the `kaskad-mcp` server connected, **use MCP tools instead of raw RP
 | EmissionVault | `0x18E5d69862E088B1ca326ACf48615875DF1763Af` |
 | stKSKD Vault | `0xbA98cd5cC5E99058834072B3428de126b433d594` |
 | WrappedTokenGateway | `0xaeb50b9b0340f760ab7c17eafcde90971083b4f9` |
-
-### Token Addresses (current deploy)
 
 | Token | Address |
 |-------|---------|
@@ -113,7 +144,7 @@ cast call 0xbe38809914b552f295cD3e8dF2e77b3DA69cBC8b \
 
 To interact with the protocol, you **MUST** ensure the `gas-limit` is ample and `gas-price` is hardcoded to at least `2000 Gwei`.
 
-*Note: For the testnet, passing `--legacy` is often safer.*
+*Note: `--legacy` flag may be required on some Igra RPC nodes.*
 
 ### 3.1. Approving the Pool
 ```bash
@@ -182,10 +213,10 @@ APY on Kaskad = **real yield** (borrower interest) + **KSKD emission incentives*
 ### 5.1 KSKD Token Basics
 - **Total supply:** 1,000,000,000 KSKD (fixed at deployment — no future minting)
 - **FDV at launch:** $12.5M | **Day 1 price:** $0.0125
+- **Mainnet address:** `0x16d92794F5B81d2CdEd0F0958779A410401e6435`
 - **Testnet address:** `0x2d17780a59044D49FeEf0AA9cEaB1B6e3161aFf7`
-- **Oracle (pre-TGE):** Static price — do not use for yield calculations. APYs involving KSKD are indicative only.
-- **Oracle (post-TGE):** Live price feed (Kaskad Oracle V1 — median of 6 sources).
-- **Supported launch assets:** USDC, WETH, USDT, WBTC, stETH. **KSKD is NOT listed at TGE** (thin liquidity risk). Do not recommend KSKD as supply collateral at launch.
+- **Oracle:** Live price feed (Kaskad Oracle V1 — median of 6 sources) on mainnet.
+- **Supported launch assets:** USDC, WETH, USDT, cbBTC, iKAS. **KSKD is NOT listed at TGE** (thin liquidity risk). Do not recommend KSKD as supply collateral at launch.
 
 ---
 
