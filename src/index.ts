@@ -13,6 +13,7 @@ import { getHistory } from "./tools/getHistory.js";
 import { getGovernanceParams } from "./tools/getGovernanceParams.js";
 import { supplyAsset, borrowAsset, repayAsset, withdrawAsset, supplyNativeIKAS, withdrawNativeIKAS, setCollateral } from "./tools/executeTransaction.js";
 import { getEmissions, getUserRewards } from "./tools/getTokenomics.js";
+import { getProtocolModes } from "./tools/getProtocolModes.js";
 import { stakeKSKD, unstakeKSKD, getStakingInfo } from "./tools/manageStaking.js";
 import { checkHealthFactor } from "./tools/checkHealthFactor.js";
 import { claimKSKDRewards } from "./tools/claimRewards.js";
@@ -165,6 +166,19 @@ const TOOLS: Tool[] = [
     },
   },
   {
+    name: "getProtocolModes",
+    description:
+      "Returns live per-asset mode configuration for all Kaskad reserves. " +
+      "CALL THIS FIRST when connecting to understand how to operate. " +
+      "Covers: isolation mode (which assets have debt ceilings and mutual exclusivity constraints), " +
+      "eMode categories (enhanced LTV for correlated assets), siloed borrowing, " +
+      "borrowable-in-isolation flags, and plain-English behavioral rules for each asset. " +
+      "Also includes protocol-level key rules: bitmap reset behavior after isolation exit, " +
+      "emission eligibility (TWAB-based, NOT staking-based), and collateral switching constraints. " +
+      "Essential for any agent planning supply/borrow/collateral strategies.",
+    inputSchema: { type: "object", properties: {}, required: [] },
+  },
+  {
     name: "getEmissions",
     description:
       "Returns KSKD emission state: current epoch, emission vault balance (remaining vs total), " +
@@ -194,7 +208,7 @@ const TOOLS: Tool[] = [
   },
   {
     name: "stakeKSKD",
-    description: "Stake KSKD tokens into the stKSKD vault (1:1). Grants governance eligibility (isEligibleSupplier / isEligibleBorrower). Requires MCP_WALLET_KEY.",
+    description: "Stake KSKD tokens into the stKSKD vault (1:1). Grants GOVERNANCE VOTING RIGHTS only — does NOT affect KSKD emission eligibility. Emission eligibility is based on supply/borrow activity (TWAB), not stKSKD holdings. Requires MCP_WALLET_KEY.",
     inputSchema: {
       type: "object",
       properties: {
@@ -208,7 +222,7 @@ const TOOLS: Tool[] = [
   },
   {
     name: "unstakeKSKD",
-    description: "Unstake stKSKD shares back to KSKD (1:1). Warning: if balance drops to 0, governance eligibility resets. Requires MCP_WALLET_KEY.",
+    description: "Unstake stKSKD shares back to KSKD (1:1). Warning: if balance drops to 0, governance voting rights are lost. Note: unstaking does NOT affect KSKD emission eligibility, which is based on supply/borrow activity. Requires MCP_WALLET_KEY.",
     inputSchema: {
       type: "object",
       properties: {
@@ -239,7 +253,7 @@ const TOOLS: Tool[] = [
     description:
       "Claim all accrued KSKD rewards for the MCP wallet from the RewardsController. " +
       "Checks claimable balance first - skips the transaction if nothing to claim. " +
-      "Rewards are earned by meeting epoch uptime and minimum position thresholds.",
+      "Rewards are earned by meeting epoch uptime and minimum position thresholds (supply >= $100, supply uptime >= 90%, borrow LTV >= 15%, borrow uptime >= 55%). Eligibility is based purely on supply/borrow activity — stKSKD holdings do NOT affect emission eligibility.",
     inputSchema: {
       type: "object",
       properties: {},
@@ -333,6 +347,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case "getHistory": {
         const { address, limit } = (args ?? {}) as { address?: string; limit?: number };
         result = await getHistory({ address, limit });
+        break;
+      }
+
+      case "getProtocolModes": {
+        result = await getProtocolModes();
         break;
       }
 
