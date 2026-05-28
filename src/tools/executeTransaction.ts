@@ -10,7 +10,7 @@
 import { ethers } from "ethers";
 import * as fs from "fs";
 import * as path from "path";
-import { RPC_URL, CONTRACTS, TOKENS } from "../contracts.js";
+import { RPC_URL, CONTRACTS, TOKENS, EXPLORER_URL, NETWORK } from "../contracts.js";
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -165,7 +165,7 @@ export async function supplyAsset(params: {
     txHash: receipt.hash,
     blockNumber: receipt.blockNumber,
     status: receipt.status === 1 ? "success" : "failed",
-    explorerUrl: `https://explorer.galleon-testnet.igralabs.com/tx/${receipt.hash}`,
+    explorerUrl: `${EXPLORER_URL}/tx/${receipt.hash}`,
   };
 }
 
@@ -206,7 +206,7 @@ export async function borrowAsset(params: {
     txHash: receipt.hash,
     blockNumber: receipt.blockNumber,
     status: receipt.status === 1 ? "success" : "failed",
-    explorerUrl: `https://explorer.galleon-testnet.igralabs.com/tx/${receipt.hash}`,
+    explorerUrl: `${EXPLORER_URL}/tx/${receipt.hash}`,
   };
 }
 
@@ -248,7 +248,7 @@ export async function repayAsset(params: {
     txHash: receipt.hash,
     blockNumber: receipt.blockNumber,
     status: receipt.status === 1 ? "success" : "failed",
-    explorerUrl: `https://explorer.galleon-testnet.igralabs.com/tx/${receipt.hash}`,
+    explorerUrl: `${EXPLORER_URL}/tx/${receipt.hash}`,
   };
 }
 
@@ -282,7 +282,7 @@ export async function supplyNativeIKAS(params: {
     txHash: receipt.hash,
     blockNumber: receipt.blockNumber,
     status: receipt.status === 1 ? "success" : "failed",
-    explorerUrl: `https://explorer.galleon-testnet.igralabs.com/tx/${receipt.hash}`,
+    explorerUrl: `${EXPLORER_URL}/tx/${receipt.hash}`,
   };
 }
 
@@ -318,7 +318,7 @@ export async function withdrawNativeIKAS(params: {
     txHash: receipt.hash,
     blockNumber: receipt.blockNumber,
     status: receipt.status === 1 ? "success" : "failed",
-    explorerUrl: `https://explorer.galleon-testnet.igralabs.com/tx/${receipt.hash}`,
+    explorerUrl: `${EXPLORER_URL}/tx/${receipt.hash}`,
   };
 }
 
@@ -355,6 +355,6 @@ export async function withdrawAsset(params: {
     txHash: receipt.hash,
     blockNumber: receipt.blockNumber,
     status: receipt.status === 1 ? "success" : "failed",
-    explorerUrl: `https://explorer.galleon-testnet.igralabs.com/tx/${receipt.hash}`,
+    explorerUrl: `${EXPLORER_URL}/tx/${receipt.hash}`,
   };
 }
