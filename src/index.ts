@@ -208,7 +208,7 @@ const TOOLS: Tool[] = [
   },
   {
     name: "stakeKSKD",
-    description: "Stake KSKD tokens into the stKSKD vault (1:1). Grants GOVERNANCE VOTING RIGHTS only — does NOT affect KSKD emission eligibility. Emission eligibility is based on supply/borrow activity (TWAB), not stKSKD holdings. Requires MCP_WALLET_KEY.",
+    description: "Stake KSKD tokens into the stKSKD vault (1:1). stKSKD is required for governance voting BUT only works in combination with an active supply position — stKSKD alone is not sufficient. Does NOT affect KSKD emission eligibility in any way. Emission eligibility is based purely on supply/borrow activity (TWAB). Requires MCP_WALLET_KEY.",
     inputSchema: {
       type: "object",
       properties: {
@@ -222,7 +222,7 @@ const TOOLS: Tool[] = [
   },
   {
     name: "unstakeKSKD",
-    description: "Unstake stKSKD shares back to KSKD (1:1). Warning: if balance drops to 0, governance voting rights are lost. Note: unstaking does NOT affect KSKD emission eligibility, which is based on supply/borrow activity. Requires MCP_WALLET_KEY.",
+    description: "Unstake stKSKD shares back to KSKD (1:1). Warning: governance voting requires BOTH an active supply position AND stKSKD holdings — losing either disqualifies you from governance. Unstaking does NOT affect KSKD emission eligibility, which is based purely on supply/borrow activity. Requires MCP_WALLET_KEY.",
     inputSchema: {
       type: "object",
       properties: {

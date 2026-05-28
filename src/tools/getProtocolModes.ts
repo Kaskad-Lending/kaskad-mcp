@@ -163,7 +163,7 @@ export async function getProtocolModes(): Promise<object> {
         "Isolated asset collateral can only borrow assets listed in borrowableInIsolation.",
         "Exiting isolation mode (withdrawing isolated collateral) resets the user bitmap to 0. A fresh supply of any asset is required before setUserUseReserveAsCollateral can succeed.",
         "KSKD emission eligibility is based on TWAB (time-weighted average balance) from supply/borrow activity — NOT on stKSKD holdings.",
-        "stKSKD only grants governance voting rights. Do not conflate staking with emission eligibility.",
+        "Governance voting requires BOTH an active supply/borrow position AND stKSKD holdings simultaneously. Neither alone is sufficient. stKSKD has no effect on emission eligibility.",
         "Emission eligibility thresholds: supply >= $100 USD, supply uptime >= 90% of epoch, borrow LTV >= 15%, borrow uptime >= 55% of epoch.",
       ],
     },

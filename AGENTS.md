@@ -266,7 +266,7 @@ To participate in governance, a user must **simultaneously**:
 
 **Voting power formula:** `Vp = λ1 · TVL_p,t + λ2 · (Stake_p,t + φ · ΣVotes_p)`
 
-**Agent implication:** Staking KSKD for governance does NOT yield financial returns and does NOT affect emission eligibility. — it only confers governance influence. Do not model staking as yield.
+**Agent implication:** Governance voting requires BOTH conditions simultaneously: (1) an active supply/borrow position AND (2) stKSKD holdings. Neither alone is sufficient. Staking KSKD yields no financial returns and does NOT affect emission eligibility. — it only confers governance influence. Do not model staking as yield.
 
 ---
 
@@ -331,7 +331,7 @@ All parameters below are adjustable by DAO vote within the stated bounds only. *
 - Reduce any parameter below its contract-enforced floor
 - Distribute treasury assets without: governance proposal → 48h timelock → 24h challenge window → execution
 
-**stKSKD note:** The stKSKD vault is deployed at `0xbA98cd5cC5E99058834072B3428de126b433d594`. Staking KSKD grants **governance voting rights only** — it has NO effect on KSKD emission eligibility. The functions `isEligibleBorrower`/`isEligibleSupplier` do NOT exist on the ActivityTracker; those names are incorrect. Emission eligibility is determined at epoch close from TWAB ratios (see 5.4). Borrowing against stKSKD as collateral is **not yet enabled** — do not model stKSKD as usable collateral.
+**stKSKD note:** The stKSKD vault is deployed at `0xbA98cd5cC5E99058834072B3428de126b433d594`. stKSKD is a prerequisite for governance voting BUT governance requires BOTH stKSKD AND an active supply position — neither alone grants voting rights. stKSKD has NO effect on KSKD emission eligibility. The functions `isEligibleBorrower`/`isEligibleSupplier` do NOT exist on the ActivityTracker; those names are incorrect. Emission eligibility is determined at epoch close from TWAB ratios (see 5.4). Borrowing against stKSKD as collateral is **not yet enabled** — do not model stKSKD as usable collateral.
 
 ---
 
