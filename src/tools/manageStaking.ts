@@ -1,4 +1,5 @@
 import { CONTRACTS, TOKENS } from "../contracts.js";
+import { RPC_URL } from "../config.js";
 import { ethers } from "ethers";
 
 const GAS_PRICE = ethers.parseUnits("2000", "gwei");
@@ -19,9 +20,7 @@ const ERC20_ABI = [
 ];
 
 function getProvider() {
-  return new ethers.JsonRpcProvider(
-    process.env.RPC_URL ?? "https://galleon-testnet.igralabs.com:8545"
-  );
+  return new ethers.JsonRpcProvider(process.env.RPC_URL ?? RPC_URL);
 }
 
 async function getSigner() {
@@ -110,8 +109,15 @@ export async function unstakeKSKD(params: { shares: number }) {
   };
 }
 
-export async function getStakingInfo(params: { address: string }) {
-  const { address } = params;
+export async function getStakingInfo(params?: { address?: string }) {
+  const address = params?.address;
+  if (!address) {
+    // No address — return vault-level info only
+    return {
+      vaultAddress: CONTRACTS.stKSKDVault,
+      note: "Pass an address to get wallet-specific stKSKD balance and holding duration.",
+    };
+  }
   if (!ethers.isAddress(address)) return { error: "Invalid Ethereum address" };
 
   const provider = getProvider();
