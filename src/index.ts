@@ -11,7 +11,7 @@ import { getPosition } from "./tools/getPosition.js";
 import { getProtocolInfo } from "./tools/getProtocolInfo.js";
 import { getHistory } from "./tools/getHistory.js";
 import { getGovernanceParams } from "./tools/getGovernanceParams.js";
-import { supplyAsset, borrowAsset, repayAsset, withdrawAsset, supplyNativeIKAS, withdrawNativeIKAS } from "./tools/executeTransaction.js";
+import { supplyAsset, borrowAsset, repayAsset, withdrawAsset, supplyNativeIKAS, withdrawNativeIKAS, setCollateral } from "./tools/executeTransaction.js";
 import { getEmissions, getUserRewards } from "./tools/getTokenomics.js";
 import { stakeKSKD, unstakeKSKD, getStakingInfo } from "./tools/manageStaking.js";
 import { checkHealthFactor } from "./tools/checkHealthFactor.js";
@@ -74,6 +74,22 @@ const TOOLS: Tool[] = [
         amount: { type: "number", description: "Amount to withdraw. Use -1 to withdraw all." },
       },
       required: ["asset", "amount"],
+    },
+  },
+  {
+    name: "setCollateral",
+    description:
+      "Enable or disable an asset as collateral for the connected wallet on Kaskad Protocol. " +
+      "Required to switch between isolated (WiKAS/IKAS) and standard collateral modes. " +
+      "In Aave v3 isolation mode, only one isolated asset can be active as collateral at a time — " +
+      "disable other collaterals first before enabling an isolated asset.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        asset: { type: "string", description: "Asset symbol to toggle: USDC, USDT, WETH, CBBTC, IKAS, WIKAS" },
+        useAsCollateral: { type: "boolean", description: "true to enable as collateral, false to disable" },
+      },
+      required: ["asset", "useAsCollateral"],
     },
   },
   {
@@ -404,6 +420,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         } else {
           result = await withdrawAsset({ asset, amount });
         }
+        break;
+      }
+
+      case "setCollateral": {
+        const { asset, useAsCollateral } = (args ?? {}) as { asset: string; useAsCollateral: boolean };
+        if (!asset) return { content: [{ type: "text", text: JSON.stringify({ error: "Missing required parameter: asset" }) }] };
+        if (typeof useAsCollateral !== "boolean") return { content: [{ type: "text", text: JSON.stringify({ error: "Missing required parameter: useAsCollateral (boolean)" }) }] };
+        result = await setCollateral({ asset, useAsCollateral });
         break;
       }
 

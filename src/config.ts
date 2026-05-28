@@ -130,3 +130,7 @@ export const ACTIVE_ASSETS: Record<string, string> = TOKENS;
 
 // Mainnet addresses are now hardcoded — no startup validation needed.
 // Env var overrides are still accepted for any field.
+
+// ─── Network display metadata ────────────────────────────────────────────────
+export const NETWORK_LABEL = NETWORK === "mainnet" ? "Igra Mainnet" : "Igra Galleon Testnet";
+export const IS_TESTNET = NETWORK !== "mainnet";
