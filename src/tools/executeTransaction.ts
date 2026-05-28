@@ -30,7 +30,7 @@ const WRAPPED_TOKEN_GATEWAY = CONTRACTS.wrappedTokenGateway;
 // Actual ABI from testnet.kaskad.live bundle — first param of depositETH is unnamed (not pool)
 const GATEWAY_ABI = [
   "function depositETH(address, address onBehalfOf, uint16 referralCode) external payable",
-  "function withdrawETH(address to, uint256 amount) external",
+  "function withdrawETH(address, uint256 amount, address to) external",
   "function borrowETH(address, uint256 amount, uint16 referralCode) external",
 ];
 
@@ -305,7 +305,7 @@ export async function withdrawNativeIKAS(params: {
   await aToken.approve(WRAPPED_TOKEN_GATEWAY, amountWei, { gasPrice: GAS_PRICE });
 
   const gateway = new ethers.Contract(WRAPPED_TOKEN_GATEWAY, GATEWAY_ABI, wallet);
-  const tx = await gateway.withdrawETH(wallet.address, amountWei, {
+  const tx = await gateway.withdrawETH(POOL_ADDRESS, amountWei, wallet.address, {
     gasPrice: GAS_PRICE,
     gasLimit: 600000n,
   });
