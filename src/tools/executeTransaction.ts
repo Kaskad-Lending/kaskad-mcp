@@ -77,6 +77,7 @@ const POOL_WRITE_ABI = [
   "function borrow(address asset, uint256 amount, uint256 interestRateMode, uint16 referralCode, address onBehalfOf) external",
   "function repay(address asset, uint256 amount, uint256 interestRateMode, address onBehalfOf) external returns (uint256)",
   "function withdraw(address asset, uint256 amount, address to) external returns (uint256)",
+  "function setUserUseReserveAsCollateral(address asset, bool useAsCollateral) external",
 ];
 
 const ERC20_WRITE_ABI = [
@@ -356,5 +357,47 @@ export async function withdrawAsset(params: {
     blockNumber: receipt.blockNumber,
     status: receipt.status === 1 ? "success" : "failed",
     explorerUrl: `${EXPLORER_URL}/tx/${receipt.hash}`,
+  };
+}
+
+// --- Set Collateral ----------------------------------------------------------
+
+/**
+ * Enable or disable an asset as collateral for the connected wallet.
+ * Required to switch between isolated and non-isolated collateral modes.
+ * In Aave v3 isolation mode, only one isolated asset can be active at a time.
+ */
+export async function setCollateral(params: {
+  asset: string;
+  useAsCollateral: boolean;
+}): Promise<object> {
+  const { asset, useAsCollateral } = params;
+  const assetUpper = asset.toUpperCase();
+
+  const assetAddress = ASSETS[assetUpper];
+  if (!assetAddress) throw new Error(`Unknown asset: ${asset}. Supported: ${Object.keys(ASSETS).join(", ")}`);
+
+  const provider = new ethers.JsonRpcProvider(RPC_URL);
+  const wallet = loadWallet(provider);
+  const pool = new ethers.Contract(POOL_ADDRESS, POOL_WRITE_ABI, wallet);
+
+  const tx = await pool.setUserUseReserveAsCollateral(assetAddress, useAsCollateral, {
+    gasPrice: GAS_PRICE,
+    gasLimit: 300000n,
+  });
+  const receipt = await tx.wait();
+
+  return {
+    action: "setCollateral",
+    asset: assetUpper,
+    useAsCollateral,
+    wallet: wallet.address,
+    txHash: receipt.hash,
+    blockNumber: receipt.blockNumber,
+    status: receipt.status === 1 ? "success" : "failed",
+    explorerUrl: `${EXPLORER_URL}/tx/${receipt.hash}`,
+    note: useAsCollateral
+      ? `${assetUpper} enabled as collateral. If isolated asset, other collaterals disabled automatically.`
+      : `${assetUpper} disabled as collateral. Supplied balance still earns yield.`,
   };
 }
