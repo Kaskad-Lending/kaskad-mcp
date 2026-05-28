@@ -1,4 +1,5 @@
 import { CONTRACTS, TOKEN_SYMBOLS, TOKENS, DEAD_POOL_ADDRESSES } from "../contracts.js";
+import { CHAIN_ID, NETWORK_LABEL, IS_TESTNET } from "../config.js";
 import { getBlockNumber, safeCall } from "../rpc.js";
 import { PoolContract, OracleContract, ERC20Contract } from "../typed-contracts.js";
 
@@ -114,10 +115,10 @@ export async function getMarkets(): Promise<MarketsResult | { error: string; rpc
 
     return {
       protocol: "Kaskad Protocol",
-      network: "Igra Galleon Testnet",
-      chainId: 38836,
-      isTestnet: true,
-      apyWarning: "Testnet environment â€” APY figures reflect real on-chain IRM state but testnet liquidity/utilization is not representative of mainnet. KSKD and IGRA use static oracle prices (no live market data pre-TGE). Treat as indicative only.",
+      network: NETWORK_LABEL,
+      chainId: CHAIN_ID,
+      isTestnet: IS_TESTNET,
+      ...(IS_TESTNET && { apyWarning: "Testnet environment — APY figures reflect real on-chain IRM state but testnet liquidity/utilization is not representative of mainnet. KSKD and IGRA use static oracle prices (no live market data pre-TGE). Treat as indicative only." }),
       blockNumber,
       markets,
     };
