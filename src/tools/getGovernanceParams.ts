@@ -1,8 +1,8 @@
 import { GovernorContract, StrategyContract } from "../typed-contracts.js";
+import { CONTRACTS } from "../config.js";
 
-// Correct addresses for Galleon Testnet (chain 38836) — source: setup.json key "38836"
-const GOVERNOR = "0xE89b59a211C4645150830Bc63c112d01eE47e888";
-const STRATEGY = "0x895016f79282D9A5C8faEA7FcB935310042fF836";
+const GOVERNOR = CONTRACTS.governor;
+const STRATEGY = CONTRACTS.kaskadStrategy;
 
 // Decision enum indices (from DecisionParams.sol)
 const DECISION_NAMES: Record<number, string> = {

@@ -1,16 +1,15 @@
 /**
  * executeTransaction.ts
  * Write tools for Kaskad Protocol: supply, borrow, repay, withdraw.
- * Signs transactions using the wallet private key from credentials file.
+ * Signs transactions using MCP_WALLET_KEY only.
  *
  * Trust boundary: max 10% of current wallet balance per asset per action.
  * Set by Jack on 2026-04-01. See memory/wallet-config.json.
  */
 
 import { ethers } from "ethers";
-import * as fs from "fs";
-import * as path from "path";
 import { RPC_URL, CONTRACTS, TOKENS, EXPLORER_URL, NETWORK } from "../contracts.js";
+import { loadWallet } from "../wallet.js";
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -36,39 +35,6 @@ const GATEWAY_ABI = [
 
 // aWIKAS token address (needed for withdrawETH approval)
 const AWIKAS_ADDRESS = "0xA7CEd4eFE5C3aE0e5C26735559A77b1e38950a14"; // WIKAS/aWIKAS — same address used by protocol
-
-// Load wallet credentials
-// Priority: MCP_WALLET_KEY env var > credentials/wallet.json (local to project) > ~/.kaskad-mcp/wallet.json
-function loadWallet(provider: ethers.JsonRpcProvider): ethers.Wallet {
-  // 1. Env var — preferred for CI/server deployments
-  if (process.env.MCP_WALLET_KEY) {
-    return new ethers.Wallet(process.env.MCP_WALLET_KEY, provider);
-  }
-
-  // 2. Local credentials file (project-relative, gitignored)
-  const localCred = path.resolve(process.cwd(), "credentials", "wallet.json");
-
-  // 3. Home directory fallback (~/.kaskad-mcp/wallet.json)
-  const homeCred = path.join(
-    process.env.HOME || process.env.USERPROFILE || "",
-    ".kaskad-mcp",
-    "wallet.json"
-  );
-
-  for (const candidate of [localCred, homeCred]) {
-    if (fs.existsSync(candidate)) {
-      const creds = JSON.parse(fs.readFileSync(candidate, "utf8"));
-      return new ethers.Wallet(creds.privateKey, provider);
-    }
-  }
-
-  throw new Error(
-    "No wallet key found. Options:\n" +
-    "  1. Set MCP_WALLET_KEY env var to your private key\n" +
-    "  2. Place credentials/wallet.json in project root: { \"privateKey\": \"0x...\" }\n" +
-    "  3. Place ~/.kaskad-mcp/wallet.json: { \"privateKey\": \"0x...\" }"
-  );
-}
 
 // ─── ABI fragments (write operations — not in contracts.ts which has view-only) ─
 

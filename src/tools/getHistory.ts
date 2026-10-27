@@ -1,4 +1,4 @@
-import { SUBGRAPH_URL, ACTIVE_ASSETS } from '../contracts.js';
+import { SUBGRAPH_URL, ACTIVE_ASSETS, NETWORK } from '../contracts.js';
 
 const RAY_PERCENT = 10n ** 25n;
 
@@ -23,9 +23,19 @@ export async function getHistory(args: { address?: string; limit?: number }) {
   const address = args.address?.toLowerCase();
 
   const result: Record<string, any> = {
-    subgraph: SUBGRAPH_URL,
-    isTestnet: true,
+    subgraph: SUBGRAPH_URL || null,
+    isTestnet: NETWORK !== 'mainnet',
   };
+
+  if (!SUBGRAPH_URL) {
+    return { ...result, status: 'unavailable', reason: `${NETWORK} history subgraph is not configured` };
+  }
+  try {
+    const url = new URL(SUBGRAPH_URL);
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new Error('Unsupported protocol');
+  } catch {
+    return { ...result, status: 'unavailable', reason: `${NETWORK} history subgraph URL is invalid` };
+  }
 
   // 1. Reserve APY snapshots — filter to active whitelisted addresses only
   const activeAddrs = Object.values(ACTIVE_ASSETS).map((a: string) => a.toLowerCase());
