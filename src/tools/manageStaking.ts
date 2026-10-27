@@ -1,6 +1,7 @@
 import { CONTRACTS, TOKENS } from "../contracts.js";
 import { RPC_URL } from "../config.js";
 import { ethers } from "ethers";
+import { loadWallet } from "../wallet.js";
 
 const GAS_PRICE = ethers.parseUnits("2000", "gwei");
 const GAS_LIMIT = 300000n;
@@ -23,20 +24,8 @@ function getProvider() {
   return new ethers.JsonRpcProvider(process.env.RPC_URL ?? RPC_URL);
 }
 
-async function getSigner() {
-  const provider = getProvider();
-  // Try env var first, then wallet.json (same pattern as executeTransaction.ts)
-  const key = process.env.MCP_WALLET_KEY;
-  if (key) return new ethers.Wallet(key, provider);
-  try {
-    const fs = await import("fs");
-    const path = await import("path");
-    const walletPath = path.resolve(process.cwd(), "credentials/wallet.json");
-    const creds = JSON.parse(fs.readFileSync(walletPath, "utf8"));
-    return new ethers.Wallet(creds.privateKey, provider);
-  } catch {
-    throw new Error("No wallet key found. Set MCP_WALLET_KEY or place credentials/wallet.json");
-  }
+function getSigner() {
+  return loadWallet(getProvider());
 }
 
 export async function stakeKSKD(params: { amount: number }) {

@@ -7,9 +7,8 @@
  */
 
 import { ethers } from "ethers";
-import * as fs from "fs";
-import * as path from "path";
 import { RPC_URL, CONTRACTS, TOKENS } from "../contracts.js";
+import { loadWallet } from "../wallet.js";
 import RewardsControllerABI from "../abi/KaskadRewardsController.json";
 
 const GAS_PRICE = ethers.parseUnits("2000", "gwei");
@@ -17,25 +16,6 @@ const WAD = 10n ** 18n;
 
 function formatWad(val: bigint): number {
   return Math.round(Number((val * 1_000_000n) / WAD)) / 1_000_000;
-}
-
-function loadWallet(provider: ethers.JsonRpcProvider): ethers.Wallet {
-  if (process.env.MCP_WALLET_KEY) {
-    return new ethers.Wallet(process.env.MCP_WALLET_KEY, provider);
-  }
-  const localCred = path.resolve(process.cwd(), "credentials", "wallet.json");
-  const homeCred = path.join(
-    process.env.HOME || process.env.USERPROFILE || "",
-    ".kaskad-mcp",
-    "wallet.json"
-  );
-  for (const candidate of [localCred, homeCred]) {
-    if (fs.existsSync(candidate)) {
-      const creds = JSON.parse(fs.readFileSync(candidate, "utf8"));
-      return new ethers.Wallet(creds.privateKey, provider);
-    }
-  }
-  throw new Error("No wallet key found. Set MCP_WALLET_KEY env var.");
 }
 
 export async function claimKSKDRewards(_params: Record<string, never> = {}): Promise<object> {

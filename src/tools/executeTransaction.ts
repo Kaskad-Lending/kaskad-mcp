@@ -9,6 +9,7 @@
 
 import { ethers } from "ethers";
 import { RPC_URL, CONTRACTS, TOKENS, EXPLORER_URL, NETWORK } from "../contracts.js";
+import { loadWallet } from "../wallet.js";
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -34,17 +35,6 @@ const GATEWAY_ABI = [
 
 // aWIKAS token address (needed for withdrawETH approval)
 const AWIKAS_ADDRESS = "0xA7CEd4eFE5C3aE0e5C26735559A77b1e38950a14"; // WIKAS/aWIKAS — same address used by protocol
-
-// Wallet keys are accepted only through the process environment.
-// Plaintext file fallbacks expand the attack surface and are intentionally disabled.
-function loadWallet(provider: ethers.JsonRpcProvider): ethers.Wallet {
-  const raw = process.env.MCP_WALLET_KEY?.trim();
-  const key = raw ? (raw.startsWith("0x") ? raw : `0x${raw}`) : "";
-  if (!ethers.isHexString(key, 32)) {
-    throw new Error("No valid MCP_WALLET_KEY supplied; plaintext wallet-file fallbacks are disabled.");
-  }
-  return new ethers.Wallet(key, provider);
-}
 
 // ─── ABI fragments (write operations — not in contracts.ts which has view-only) ─
 
