@@ -7,7 +7,7 @@
     "build": "npx tsc",
     "start": "node dist/index.js",
     "dev": "npx ts-node src/index.ts",
-    "test": "npm run build && node --test test/pure-functions.test.js"
+    "test": "npm run build && node --test test/pure-functions.test.js test/native-withdraw.test.cjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
