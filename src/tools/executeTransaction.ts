@@ -30,12 +30,9 @@ const WRAPPED_TOKEN_GATEWAY = CONTRACTS.wrappedTokenGateway;
 // Actual ABI from testnet.kaskad.live bundle — first param of depositETH is unnamed (not pool)
 const GATEWAY_ABI = [
   "function depositETH(address, address onBehalfOf, uint16 referralCode) external payable",
-  "function withdrawETH(address to, uint256 amount) external",
+  "function withdrawETH(address pool, uint256 amount, address to) external",
   "function borrowETH(address, uint256 amount, uint16 referralCode) external",
 ];
-
-// aWIKAS token address (needed for withdrawETH approval)
-const AWIKAS_ADDRESS = "0xA7CEd4eFE5C3aE0e5C26735559A77b1e38950a14"; // WIKAS/aWIKAS — same address used by protocol
 
 // Load wallet credentials
 // Priority: MCP_WALLET_KEY env var > credentials/wallet.json (local to project) > ~/.kaskad-mcp/wallet.json
@@ -78,6 +75,10 @@ const POOL_WRITE_ABI = [
   "function repay(address asset, uint256 amount, uint256 interestRateMode, address onBehalfOf) external returns (uint256)",
   "function withdraw(address asset, uint256 amount, address to) external returns (uint256)",
   "function setUserUseReserveAsCollateral(address asset, bool useAsCollateral) external",
+];
+
+const POOL_RESERVE_DATA_ABI = [
+  "function getReserveData(address asset) view returns (uint256 configuration, uint128 liquidityIndex, uint128 currentLiquidityRate, uint128 variableBorrowIndex, uint128 currentVariableBorrowRate, uint128 currentStableBorrowRate, uint40 lastUpdateTimestamp, uint16 id, address aTokenAddress, address stableDebtTokenAddress, address variableDebtTokenAddress, address interestRateStrategyAddress, uint128 accruedToTreasury, uint128 unbacked, uint128 isolationModeTotalDebt)",
 ];
 
 const ERC20_WRITE_ABI = [
@@ -300,12 +301,25 @@ export async function withdrawNativeIKAS(params: {
     ? ethers.MaxUint256
     : ethers.parseUnits(amount.toString(), 18);
 
-  // Approve gateway to spend aWIKAS on our behalf
-  const aToken = new ethers.Contract(AWIKAS_ADDRESS, ERC20_WRITE_ABI, wallet);
-  await aToken.approve(WRAPPED_TOKEN_GATEWAY, amountWei, { gasPrice: GAS_PRICE });
+  // Resolve the active network's iKAS aToken from the pool; do not hard-code testnet state.
+  const poolReader = new ethers.Contract(POOL_ADDRESS, POOL_RESERVE_DATA_ABI, provider);
+  const reserveData = await poolReader.getReserveData(TOKENS.IKAS);
+  // Aave V3 ReserveData.aTokenAddress is tuple field 8.
+  const aTokenAddress = reserveData[8] as string;
+  if (!ethers.isAddress(aTokenAddress) || aTokenAddress === ethers.ZeroAddress) {
+    throw new Error("Unable to resolve the iKAS aToken from the active pool");
+  }
+
+  // Approve the gateway to spend aTokens and wait before issuing the withdrawal.
+  const aToken = new ethers.Contract(aTokenAddress, ERC20_WRITE_ABI, wallet);
+  const approveTx = await aToken.approve(WRAPPED_TOKEN_GATEWAY, amountWei, {
+    gasPrice: GAS_PRICE,
+    gasLimit: 200000n,
+  });
+  await approveTx.wait();
 
   const gateway = new ethers.Contract(WRAPPED_TOKEN_GATEWAY, GATEWAY_ABI, wallet);
-  const tx = await gateway.withdrawETH(wallet.address, amountWei, {
+  const tx = await gateway.withdrawETH(POOL_ADDRESS, amountWei, wallet.address, {
     gasPrice: GAS_PRICE,
     gasLimit: 600000n,
   });
